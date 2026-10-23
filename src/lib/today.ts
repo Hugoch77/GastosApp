@@ -18,3 +18,8 @@ const formatter = new Intl.DateTimeFormat('en-CA', {
 export function todayInMexico(now: Date = new Date()): IsoDate {
   return formatter.format(now)
 }
+
+/** Instante actual en ISO-8601 UTC, para createdAt/updatedAt/deletedAt. */
+export function nowTimestamp(now: Date = new Date()): string {
+  return now.toISOString()
+}
