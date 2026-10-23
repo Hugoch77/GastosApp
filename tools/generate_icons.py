@@ -1,0 +1,74 @@
+"""Genera los íconos de la app (favicon y PWA) a partir de un solo diseño SVG.
+
+Uso (desde la raíz del proyecto):
+    .venv/Scripts/python tools/generate_icons.py
+
+Usa el Chromium de Playwright para convertir el SVG a PNG, así no se necesita
+ninguna herramienta extra. Los archivos generados se guardan en public/.
+"""
+
+from pathlib import Path
+
+from playwright.sync_api import sync_playwright
+
+PUBLIC_DIR = Path(__file__).resolve().parent.parent / "public"
+
+INDIGO = "#4f46e5"
+INDIGO_LIGHT = "#c7d2fe"
+EMERALD = "#10b981"
+
+
+def icon_svg(rounded: bool) -> str:
+    """Tarjeta de crédito con una palomita verde ("pagado a tiempo").
+
+    - rounded=True: esquinas redondeadas y fondo transparente (favicon, ícono normal).
+    - rounded=False: fondo cuadrado completo, para íconos "maskable" (Android recorta
+      la forma) y el de iOS (que redondea solo). El dibujo queda dentro de la zona
+      segura del 80 % central.
+    """
+    corner = 112 if rounded else 0
+    return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="{corner}" fill="{INDIGO}"/>
+  <rect x="96" y="148" width="320" height="216" rx="32" fill="#ffffff"/>
+  <rect x="96" y="196" width="320" height="44" fill="{INDIGO_LIGHT}"/>
+  <rect x="132" y="292" width="96" height="24" rx="12" fill="{INDIGO}" opacity="0.35"/>
+  <circle cx="352" cy="304" r="36" fill="{EMERALD}"/>
+  <path d="M335 304l12 12 22-24" fill="none" stroke="#ffffff" stroke-width="10"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+"""
+
+
+# (archivo, tamaño en px, ¿esquinas redondeadas?)
+PNG_ICONS = [
+    ("pwa-192x192.png", 192, True),
+    ("pwa-512x512.png", 512, True),
+    ("maskable-512x512.png", 512, False),
+    ("apple-touch-icon.png", 180, False),
+]
+
+
+def render_png(page, svg: str, size: int, destination: Path) -> None:
+    page.set_viewport_size({"width": size, "height": size})
+    page.set_content(
+        f"<style>html,body{{margin:0;background:transparent}}"
+        f"svg{{display:block;width:{size}px;height:{size}px}}</style>{svg}"
+    )
+    page.screenshot(path=destination, omit_background=True)
+
+
+def main() -> None:
+    (PUBLIC_DIR / "favicon.svg").write_text(icon_svg(rounded=True), encoding="utf-8")
+    print("public/favicon.svg")
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page()
+        for file_name, size, rounded in PNG_ICONS:
+            render_png(page, icon_svg(rounded), size, PUBLIC_DIR / file_name)
+            print(f"public/{file_name}")
+        browser.close()
+
+
+if __name__ == "__main__":
+    main()
