@@ -11,7 +11,12 @@ import type { Transaction, TransactionType } from './types'
 // Corte día 15, pago día 5, pagar 2 días antes.
 // Hoy 2026-10-20 → facturado: 2026-09-16..2026-10-15 (límite 2026-11-05, sugerida 2026-11-03)
 //                → actual:    2026-10-16..2026-11-15
-const config: BillingConfig = { cutDay: 15, dueDay: 5, paymentBufferDays: 2 }
+const config: BillingConfig = {
+  cutDay: 15,
+  cutDayInNextPeriod: false,
+  dueDay: 5,
+  paymentBufferDays: 2,
+}
 const TODAY = '2026-10-20'
 
 let nextId = 1
@@ -42,15 +47,15 @@ const baseScenario: Transaction[] = [
 describe('chargeAmountForStatement', () => {
   it('contado: aporta todo al estado de su periodo y nada a otros', () => {
     const charge = tx('charge', '2026-10-15', 20000)
-    expect(chargeAmountForStatement(charge, '2026-10-15', 15)).toBe(20000)
-    expect(chargeAmountForStatement(charge, '2026-11-15', 15)).toBe(0)
+    expect(chargeAmountForStatement(charge, '2026-10-15', config)).toBe(20000)
+    expect(chargeAmountForStatement(charge, '2026-11-15', config)).toBe(0)
   })
 
   it('MSI: aporta solo la mensualidad de ese estado', () => {
     const msi = tx('charge', '2026-10-01', 100000, 3)
-    expect(chargeAmountForStatement(msi, '2026-10-15', 15)).toBe(33334)
-    expect(chargeAmountForStatement(msi, '2026-11-15', 15)).toBe(33333)
-    expect(chargeAmountForStatement(msi, '2027-01-15', 15)).toBe(0)
+    expect(chargeAmountForStatement(msi, '2026-10-15', config)).toBe(33334)
+    expect(chargeAmountForStatement(msi, '2026-11-15', config)).toBe(33333)
+    expect(chargeAmountForStatement(msi, '2027-01-15', config)).toBe(0)
   })
 
   it('pagos y devoluciones no son cargos', () => {
@@ -58,38 +63,45 @@ describe('chargeAmountForStatement', () => {
       chargeAmountForStatement(
         tx('payment', '2026-10-01', 500),
         '2026-10-15',
-        15,
+        config,
       ),
     ).toBe(0)
     expect(
       chargeAmountForStatement(
         tx('refund', '2026-10-01', 500),
         '2026-10-15',
-        15,
+        config,
       ),
     ).toBe(0)
   })
 })
 
 describe('statementTotalCents', () => {
+  const billed = {
+    cutDate: '2026-10-15',
+    period: { start: '2026-09-16', end: '2026-10-15' },
+  }
+
   it('cargos del periodo − devoluciones del periodo', () => {
-    const period = { start: '2026-09-16', end: '2026-10-15' }
-    expect(statementTotalCents(baseScenario, period, 15)).toBe(90000)
+    expect(statementTotalCents(baseScenario, billed, config)).toBe(90000)
   })
 
   it('puede ser negativo si las devoluciones superan a los cargos', () => {
-    const period = { start: '2026-09-16', end: '2026-10-15' }
     expect(
-      statementTotalCents([tx('refund', '2026-10-01', 5000)], period, 15),
+      statementTotalCents([tx('refund', '2026-10-01', 5000)], billed, config),
     ).toBe(-5000)
   })
 })
 
 describe('pendingInstallmentsCents', () => {
   it('suma solo mensualidades de estados posteriores al corte dado', () => {
-    expect(pendingInstallmentsCents(baseScenario, '2026-11-15', 15)).toBe(30000)
-    expect(pendingInstallmentsCents(baseScenario, '2026-10-15', 15)).toBe(60000)
-    expect(pendingInstallmentsCents(baseScenario, '2026-12-15', 15)).toBe(0)
+    expect(pendingInstallmentsCents(baseScenario, '2026-11-15', config)).toBe(
+      30000,
+    )
+    expect(pendingInstallmentsCents(baseScenario, '2026-10-15', config)).toBe(
+      60000,
+    )
+    expect(pendingInstallmentsCents(baseScenario, '2026-12-15', config)).toBe(0)
   })
 })
 
@@ -181,6 +193,34 @@ describe('getDashboardSummary', () => {
     expect(summary.currentPeriodCents).toBe(0)
     expect(summary.billedStatementCents).toBe(20000)
     expect(summary.noInterestPaymentCents).toBe(20000)
+  })
+
+  describe('banco que pasa el día de corte al siguiente estado', () => {
+    // Corte 5, pago 25 → facturado 2026-09-05..2026-10-04, límite 2026-10-25
+    const bbva: BillingConfig = {
+      cutDay: 5,
+      cutDayInNextPeriod: true,
+      dueDay: 25,
+      paymentBufferDays: 2,
+    }
+
+    it('el cargo del día de corte va al periodo actual y el pago de ese día cuenta para el facturado', () => {
+      const summary = getDashboardSummary('2026-10-05', bbva, [
+        tx('charge', '2026-10-04', 30000),
+        tx('charge', '2026-10-05', 20000),
+        tx('payment', '2026-10-05', 30000),
+      ])
+      expect(summary.billedStatementCents).toBe(30000)
+      expect(summary.currentPeriodCents).toBe(20000)
+      expect(summary.paidSinceCutCents).toBe(30000)
+      expect(summary.paymentStatus).toBe('paid')
+    })
+
+    it('el día de corte ya no dice "Corta hoy": el ciclo nuevo empezó', () => {
+      const summary = getDashboardSummary('2026-10-05', bbva, [])
+      expect(summary.cycle.isCutDay).toBe(false)
+      expect(summary.daysToNextCut).toBe(31)
+    })
   })
 
   it('sin movimientos todo es cero y no hay nada que pagar', () => {

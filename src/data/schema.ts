@@ -10,7 +10,7 @@ import { isValidIsoDate } from '../domain/dates'
 // Mensajes de error de Zod en español.
 z.config(z.locales.es())
 
-export const CURRENT_SCHEMA_VERSION = 1
+export const CURRENT_SCHEMA_VERSION = 2
 
 const id = z.string().min(1)
 const timestamp = z.iso.datetime()
@@ -23,6 +23,8 @@ export const CardSchema = z.object({
   id,
   name: z.string().trim().min(1).max(40),
   cutDay: dayOfMonth,
+  /** true: los movimientos del día de corte entran al estado siguiente */
+  cutDayInNextPeriod: z.boolean(),
   dueDay: dayOfMonth,
   paymentBufferDays: z.int().min(0).max(10),
   createdAt: timestamp,
@@ -131,6 +133,7 @@ export const AppDataSchema = z
 export const CardInputSchema = CardSchema.pick({
   name: true,
   cutDay: true,
+  cutDayInNextPeriod: true,
   dueDay: true,
   paymentBufferDays: true,
 })

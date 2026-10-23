@@ -18,6 +18,7 @@ import {
 const cardInput: CardInput = {
   name: 'Azul',
   cutDay: 15,
+  cutDayInNextPeriod: false,
   dueDay: 5,
   paymentBufferDays: 2,
 }

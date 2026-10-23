@@ -8,7 +8,7 @@ import { SegmentedControl } from '../components/SegmentedControl'
 import { ui } from '../components/styles'
 import type { Transaction, TransactionInput } from '../data/schema'
 import { activeCards, activeCategories } from '../data/selectors'
-import { periodContaining } from '../domain/billing'
+import { statementCutFor } from '../domain/billing'
 import { isValidIsoDate } from '../domain/dates'
 import {
   installmentSchedule,
@@ -145,7 +145,7 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
   // Ayudas en vivo: en qué estado entra el movimiento y cómo quedan las mensualidades.
   const statementHint =
     type !== 'payment' && isValidIsoDate(date)
-      ? `Entra en el estado que corta el ${formatShortDate(periodContaining(date, card.cutDay).end)}`
+      ? `Entra en el estado que corta el ${formatShortDate(statementCutFor(date, card))}`
       : undefined
 
   const schedule =
@@ -154,7 +154,7 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
     months >= 2 &&
     months <= 48 &&
     isValidIsoDate(date)
-      ? installmentSchedule(date, amountCents, months, card.cutDay)
+      ? installmentSchedule(date, amountCents, months, card)
       : null
 
   return (

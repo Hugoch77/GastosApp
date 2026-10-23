@@ -47,6 +47,7 @@ export function sampleCard(overrides: Partial<Card> = {}): Card {
     id: 'card-1',
     name: 'Tarjeta principal',
     cutDay: 15,
+    cutDayInNextPeriod: false,
     dueDay: 5,
     paymentBufferDays: 2,
     createdAt: T0,

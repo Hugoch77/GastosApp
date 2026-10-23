@@ -3,9 +3,11 @@
  *
  * Decisiones de negocio:
  * - Un día de corte/pago mayor a los días del mes se recorta al último día del mes.
- * - Un periodo va del día siguiente al corte anterior hasta el día de corte, INCLUSIVE:
- *   un movimiento hecho el día de corte pertenece al estado que cierra ese día.
- * - El día del corte, ese ciclo sigue siendo el "actual"; se factura al día siguiente.
+ * - Lo hecho el mismo día de corte depende del banco (`cutDayInNextPeriod`):
+ *   - false: el periodo va del día siguiente al corte anterior hasta el día de corte,
+ *     INCLUSIVE. El día del corte, ese ciclo sigue siendo el "actual".
+ *   - true: el banco corta al iniciar el día; el periodo va del corte anterior hasta
+ *     el día ANTERIOR al corte, y lo del día de corte entra al estado siguiente.
  * - La fecha límite es la primera fecha con `dueDay` estrictamente posterior al corte.
  * - Si la fecha límite cae en día inhábil, la nominal se mantiene como principal y
  *   la "efectiva" (siguiente día hábil) es informativa.
@@ -22,9 +24,15 @@ import {
 } from './dates'
 import { nextBusinessDay, previousBusinessDay } from './holidays'
 
-export interface BillingConfig {
+/** Lo necesario para saber a qué estado de cuenta pertenece una fecha. */
+export interface CutSchedule {
   /** Día de corte, 1–31 */
   cutDay: number
+  /** true: los movimientos del día de corte entran al estado siguiente */
+  cutDayInNextPeriod: boolean
+}
+
+export interface BillingConfig extends CutSchedule {
   /** Día límite de pago, 1–31 */
   dueDay: number
   /** Días antes de la fecha límite en los que el usuario quiere pagar */
@@ -50,6 +58,9 @@ export interface Statement {
   /** Fecha en la que el usuario planea pagar */
   suggestedPaymentDate: IsoDate
 }
+
+/** Lo mínimo para identificar un estado: su corte y las fechas de su periodo. */
+export type StatementDates = Pick<Statement, 'cutDate' | 'period'>
 
 export interface BillingCycle {
   /** Estado ya cortado cuyo pago está pendiente o ya vencido */
@@ -101,15 +112,27 @@ export function nextCutOnOrAfter(date: IsoDate, cutDay: number): IsoDate {
     : cutDateRelativeTo(date, cutDay, 1)
 }
 
-/** Periodo que cierra en `cutDate`: del día siguiente al corte anterior hasta `cutDate`. */
-export function periodEndingAt(cutDate: IsoDate, cutDay: number): Period {
-  const previousCut = cutDateRelativeTo(cutDate, cutDay, -1)
-  return { start: addDays(previousCut, 1), end: cutDate }
+/** Fecha de corte del estado de cuenta al que pertenece un movimiento con fecha `date`. */
+export function statementCutFor(date: IsoDate, schedule: CutSchedule): IsoDate {
+  return schedule.cutDayInNextPeriod
+    ? nextCutOnOrAfter(addDays(date, 1), schedule.cutDay)
+    : nextCutOnOrAfter(date, schedule.cutDay)
+}
+
+/** Fechas (inclusive) del periodo que cierra en `cutDate`. */
+export function periodEndingAt(
+  cutDate: IsoDate,
+  schedule: CutSchedule,
+): Period {
+  const previousCut = cutDateRelativeTo(cutDate, schedule.cutDay, -1)
+  return schedule.cutDayInNextPeriod
+    ? { start: previousCut, end: addDays(cutDate, -1) }
+    : { start: addDays(previousCut, 1), end: cutDate }
 }
 
 /** Periodo (estado de cuenta) al que pertenece un movimiento con fecha `date`. */
-export function periodContaining(date: IsoDate, cutDay: number): Period {
-  return periodEndingAt(nextCutOnOrAfter(date, cutDay), cutDay)
+export function periodContaining(date: IsoDate, schedule: CutSchedule): Period {
+  return periodEndingAt(statementCutFor(date, schedule), schedule)
 }
 
 /** Primera fecha con `dueDay` (recortado al mes) estrictamente posterior al corte. */
@@ -139,7 +162,7 @@ export function statementForCut(
 ): Statement {
   const dueDate = dueDateForCut(cutDate, config.dueDay)
   return {
-    period: periodEndingAt(cutDate, config.cutDay),
+    period: periodEndingAt(cutDate, config),
     cutDate,
     dueDate,
     effectiveDueDate: nextBusinessDay(dueDate, config.extraHolidays),
@@ -156,12 +179,14 @@ export function getBillingCycle(
   today: IsoDate,
   config: BillingConfig,
 ): BillingCycle {
-  const lastCut = lastCutBefore(today, config.cutDay)
-  const nextCut = nextCutOnOrAfter(today, config.cutDay)
+  // El ciclo actual es el estado al que entraría un movimiento hecho hoy;
+  // el facturado, el que cerró justo antes.
+  const currentCut = statementCutFor(today, config)
+  const billedCut = cutDateRelativeTo(currentCut, config.cutDay, -1)
   return {
-    billed: statementForCut(lastCut, config),
-    current: statementForCut(nextCut, config),
-    isCutDay: nextCut === today,
+    billed: statementForCut(billedCut, config),
+    current: statementForCut(currentCut, config),
+    isCutDay: currentCut === today,
   }
 }
 

@@ -31,6 +31,21 @@ jobs:
       - run: npm test
       - run: npm run build
 
+  tools:
+    name: Pruebas de herramientas (Python)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: tools/requirements.txt
+
+      - run: python -m pip install -r tools/requirements.txt
+      - run: python -m pytest tools
+
   e2e:
     name: Pruebas E2E (Playwright + pytest)
     needs: checks
@@ -80,7 +95,7 @@ jobs:
     name: Publicar en GitHub Pages
     # Solo se publica lo que llega a master y pasó todas las pruebas.
     if: github.ref == 'refs/heads/master'
-    needs: [checks, e2e]
+    needs: [checks, tools, e2e]
     runs-on: ubuntu-latest
     permissions:
       pages: write

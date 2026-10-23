@@ -34,7 +34,7 @@ def test_export_and_import_on_another_device(page: Page, set_today, tmp_path: Pa
     settings.open()
     backup = settings.export_backup(tmp_path)
     assert backup.name == "gastosapp-respaldo-2026-10-23.json"
-    assert json.loads(backup.read_text(encoding="utf-8"))["schemaVersion"] == 1
+    assert json.loads(backup.read_text(encoding="utf-8"))["schemaVersion"] == 2
 
     # "Otro dispositivo": sin datos, se importa desde la pantalla de bienvenida.
     page.evaluate("localStorage.clear()")

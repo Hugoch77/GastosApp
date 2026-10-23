@@ -7,17 +7,20 @@
  * - Estado facturado = cargos asignados al periodo (contado + mensualidades MSI)
  *   − devoluciones del periodo. Los pagos hechos DENTRO del periodo cubrieron el
  *   estado anterior, por eso no se restan aquí.
- * - Pago para no generar intereses = estado facturado − pagos posteriores al corte.
+ * - Pago para no generar intereses = estado facturado − pagos hechos desde que
+ *   empezó el periodo actual (es decir, después del corte).
  * - Una devolución de una compra a MSI se trata como un abono en su periodo.
  */
 import {
   getBillingCycle,
   paymentUrgency,
-  periodContaining,
+  statementCutFor,
   type BillingConfig,
   type BillingCycle,
+  type CutSchedule,
   type PaymentUrgency,
   type Period,
+  type StatementDates,
 } from './billing'
 import { daysBetween, type IsoDate } from './dates'
 import { installmentSchedule } from './installments'
@@ -32,7 +35,7 @@ export interface DashboardSummary {
   totalBalanceCents: number
   /** Monto del estado facturado, antes de pagos */
   billedStatementCents: number
-  /** Pagos hechos después del último corte */
+  /** Pagos hechos dentro del periodo actual (después del último corte) */
   paidSinceCutCents: number
   /** Lo que falta pagar del estado facturado para no generar intereses */
   noInterestPaymentCents: number
@@ -60,7 +63,7 @@ function sumCents(values: number[]): number {
 export function chargeAmountForStatement(
   transaction: Transaction,
   cutDate: IsoDate,
-  cutDay: number,
+  schedule: CutSchedule,
 ): number {
   if (transaction.type !== 'charge') return 0
 
@@ -69,28 +72,30 @@ export function chargeAmountForStatement(
       transaction.date,
       transaction.amountCents,
       transaction.installments.months,
-      cutDay,
+      schedule,
     ).find((payment) => payment.cutDate === cutDate)
     return installment?.amountCents ?? 0
   }
 
-  return periodContaining(transaction.date, cutDay).end === cutDate
+  return statementCutFor(transaction.date, schedule) === cutDate
     ? transaction.amountCents
     : 0
 }
 
-/** Cargos asignados al periodo − devoluciones del periodo. Puede ser negativo. */
+/** Cargos asignados al estado − devoluciones del periodo. Puede ser negativo. */
 export function statementTotalCents(
   transactions: Transaction[],
-  period: Period,
-  cutDay: number,
+  statement: StatementDates,
+  schedule: CutSchedule,
 ): number {
   const charges = sumCents(
-    transactions.map((t) => chargeAmountForStatement(t, period.end, cutDay)),
+    transactions.map((t) =>
+      chargeAmountForStatement(t, statement.cutDate, schedule),
+    ),
   )
   const refunds = sumCents(
     transactions
-      .filter((t) => t.type === 'refund' && isWithin(t.date, period))
+      .filter((t) => t.type === 'refund' && isWithin(t.date, statement.period))
       .map((t) => t.amountCents),
   )
   return charges - refunds
@@ -108,7 +113,7 @@ export function totalBalanceCents(transactions: Transaction[]): number {
 export function pendingInstallmentsCents(
   transactions: Transaction[],
   cutDate: IsoDate,
-  cutDay: number,
+  schedule: CutSchedule,
 ): number {
   return sumCents(
     transactions
@@ -118,7 +123,7 @@ export function pendingInstallmentsCents(
               t.date,
               t.amountCents,
               t.installments.months,
-              cutDay,
+              schedule,
             )
           : [],
       )
@@ -135,14 +140,10 @@ export function getDashboardSummary(
   const cycle = getBillingCycle(today, config)
   const { billed, current } = cycle
 
-  const billedStatementCents = statementTotalCents(
-    transactions,
-    billed.period,
-    config.cutDay,
-  )
+  const billedStatementCents = statementTotalCents(transactions, billed, config)
   const paidSinceCutCents = sumCents(
     transactions
-      .filter((t) => t.type === 'payment' && t.date > billed.cutDate)
+      .filter((t) => t.type === 'payment' && t.date >= current.period.start)
       .map((t) => t.amountCents),
   )
   const noInterestPaymentCents = Math.max(
@@ -157,15 +158,11 @@ export function getDashboardSummary(
     paidSinceCutCents,
     noInterestPaymentCents,
     creditBalanceCents: Math.max(0, paidSinceCutCents - billedStatementCents),
-    currentPeriodCents: statementTotalCents(
-      transactions,
-      current.period,
-      config.cutDay,
-    ),
+    currentPeriodCents: statementTotalCents(transactions, current, config),
     pendingInstallmentsCents: pendingInstallmentsCents(
       transactions,
       current.cutDate,
-      config.cutDay,
+      config,
     ),
     daysToNextCut: daysBetween(today, current.cutDate),
     daysToDueDate: daysBetween(today, billed.dueDate),

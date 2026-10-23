@@ -25,22 +25,25 @@ Tus datos se guardan solo en tu dispositivo.
   próximo corte, gasto del periodo actual, saldo total y MSI por facturar.
 - **Movimientos** agrupados en _Periodo actual_, _Facturado_ y _Todos_: cargos, pagos y devoluciones.
 - **Meses sin intereses**: reparto exacto de las mensualidades por estado de cuenta, con vista previa al capturar.
-- **Varias tarjetas**, cada una con su día de corte, día límite de pago y días de anticipación para pagar.
+- **Varias tarjetas**, cada una con su día de corte, día límite de pago, días de anticipación para pagar y si
+  lo comprado el día de corte entra en ese estado o en el siguiente (depende del banco).
 - **Días inhábiles bancarios** de México calculados automáticamente (incluida la Semana Santa), más días
   adicionales configurables.
 - **Respaldo**: exportar e importar todos los datos en JSON.
+- **Importación desde Excel**: `tools/excel_to_json.py` convierte una hoja de compras en un respaldo listo
+  para importar, incluyendo compras a MSI que siguen vigentes.
 - **PWA**: instalable, funciona sin conexión, tiene modo oscuro y avisa cuando hay una versión nueva.
 
 ## Cómo calcula las fechas
 
-| Concepto                       | Regla                                                                                                              |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| Periodo                        | Del día siguiente al corte anterior hasta el día de corte, inclusive.                                              |
-| Día de corte que no existe     | Se usa el último día del mes (31 → 28/29 en febrero, 30 en abril).                                                 |
-| Fecha límite                   | El primer día de pago posterior al corte, aunque caiga en el mes o el año siguiente.                               |
-| Fecha límite en día inhábil    | Se muestra la fecha nominal; el siguiente día hábil aparece solo como nota.                                        |
-| Fecha sugerida de pago         | Fecha límite menos los días de anticipación (2 por defecto); si cae en día inhábil, se adelanta al hábil anterior. |
-| Pago para no generar intereses | Cargos y mensualidades MSI del estado facturado, menos devoluciones, menos pagos hechos después del corte.         |
+| Concepto                       | Regla                                                                                                                    |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| Periodo                        | Del corte anterior al día de corte; según el banco, las compras del día de corte entran en ese estado o en el siguiente. |
+| Día de corte que no existe     | Se usa el último día del mes (31 → 28/29 en febrero, 30 en abril).                                                       |
+| Fecha límite                   | El primer día de pago posterior al corte, aunque caiga en el mes o el año siguiente.                                     |
+| Fecha límite en día inhábil    | Se muestra la fecha nominal; el siguiente día hábil aparece solo como nota.                                              |
+| Fecha sugerida de pago         | Fecha límite menos los días de anticipación (2 por defecto); si cae en día inhábil, se adelanta al hábil anterior.       |
+| Pago para no generar intereses | Cargos y mensualidades MSI del estado facturado, menos devoluciones, menos pagos hechos después del corte.               |
 
 Todos los montos se manejan en centavos enteros para evitar errores de redondeo, y "hoy" se calcula en la zona
 horaria de la Ciudad de México.
@@ -69,7 +72,7 @@ src/
   components/  Componentes de interfaz
   pages/       Pantallas
 e2e/           Pruebas E2E (pytest + Playwright)
-tools/         Scripts de apoyo (generación de íconos)
+tools/         Scripts de apoyo: importación desde Excel y generación de íconos
 ```
 
 La lógica de negocio (`src/domain`) no depende de React ni del almacenamiento, y nunca lee el reloj del sistema:
@@ -94,6 +97,17 @@ npm run dev          # http://localhost:5173
 | `npm run typecheck`  | Verificación de tipos                             |
 | `npm run format`     | Formatea el código (`format:check` solo verifica) |
 
+### Importar desde Excel
+
+```bash
+.venv/Scripts/python -m pip install -r tools/requirements.txt
+.venv/Scripts/python tools/excel_to_json.py compras.xlsx --tarjeta "Mi tarjeta" --corte 5 --pago 25     --dia-de-corte-al-siguiente --facturado-pagado
+```
+
+El Excel necesita una hoja `Datos compra` con las columnas `MONTO TOTAL`, `# DE CUOTAS`, `MES DE 1ER CUOTA` y
+`DETALLE` (con la fecha al final, p. ej. `Tacos 8/10/26`). El JSON se guarda junto al Excel y se importa en
+**Ajustes → Importar respaldo**. Usa `--help` para ver todas las opciones.
+
 ### Pruebas E2E
 
 ```bash
@@ -113,8 +127,9 @@ que los resultados no dependan del día en que se ejecutan.
 Cada push ejecuta el workflow [`ci.yml`](.github/workflows/ci.yml):
 
 1. **Checks**: lint, formato, tipos, pruebas unitarias y build.
-2. **E2E**: pruebas con Playwright sobre el build de producción.
-3. **Deploy** (solo en `master`): si todo pasa, publica el build en GitHub Pages.
+2. **Tools**: pruebas del importador de Excel (pytest).
+3. **E2E**: pruebas con Playwright sobre el build de producción.
+4. **Deploy** (solo en `master`): si todo pasa, publica el build en GitHub Pages.
 
 ## Datos y privacidad
 

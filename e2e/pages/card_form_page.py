@@ -11,18 +11,28 @@ class CardFormPage:
         self.cut_day = page.locator("#cut-day")
         self.due_day = page.locator("#due-day")
         self.buffer_days = page.locator("#buffer")
+        self.cut_day_rule = page.get_by_test_id("cut-day-rule")
         self.preview_cut_date = page.get_by_test_id("preview-cut-date")
         self.preview_due_date = page.get_by_test_id("preview-due-date")
         self.preview_suggested_date = page.get_by_test_id("preview-suggested-date")
         self.grace_warning = page.get_by_test_id("grace-warning")
         self.save_button = page.get_by_test_id("save-card")
 
-    def fill(self, name: str, cut_day: int, due_day: int, buffer_days: int | None = None) -> None:
+    def fill(
+        self,
+        name: str,
+        cut_day: int,
+        due_day: int,
+        buffer_days: int | None = None,
+        cut_day_in_next_period: bool = False,
+    ) -> None:
         self.name.fill(name)
         self.cut_day.select_option(str(cut_day))
         self.due_day.select_option(str(due_day))
         if buffer_days is not None:
             self.buffer_days.fill(str(buffer_days))
+        if cut_day_in_next_period:
+            self.cut_day_rule.get_by_role("radio", name="Al siguiente").click()
 
     def save(self) -> None:
         self.save_button.click()

@@ -35,6 +35,7 @@ export function billingConfigFor(
 ): BillingConfig {
   return {
     cutDay: card.cutDay,
+    cutDayInNextPeriod: card.cutDayInNextPeriod,
     dueDay: card.dueDay,
     paymentBufferDays: card.paymentBufferDays,
     extraHolidays: settings.extraHolidays,

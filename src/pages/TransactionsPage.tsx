@@ -6,7 +6,7 @@ import { SegmentedControl } from '../components/SegmentedControl'
 import { ui } from '../components/styles'
 import type { Category, Transaction } from '../data/schema'
 import { transactionsForCard } from '../data/selectors'
-import { getBillingCycle, type Period } from '../domain/billing'
+import { getBillingCycle, type Statement } from '../domain/billing'
 import { statementEntries, type StatementEntry } from '../domain/statement'
 import { statementTotalCents } from '../domain/summary'
 import { useSelectedCard } from '../hooks/useSelectedCard'
@@ -38,15 +38,15 @@ export function TransactionsPage() {
 
   const transactions = transactionsForCard(data, card.id)
   const cycle = getBillingCycle(today, config)
-  const period: Period | null =
+  const statement: Statement | null =
     view === 'actual'
-      ? cycle.current.period
+      ? cycle.current
       : view === 'facturado'
-        ? cycle.billed.period
+        ? cycle.billed
         : null
 
-  const entries: StatementEntry<Transaction>[] = period
-    ? statementEntries(transactions, period, config.cutDay)
+  const entries: StatementEntry<Transaction>[] = statement
+    ? statementEntries(transactions, statement, config)
     : transactions.map((t) => ({
         transaction: t,
         amountCents: t.amountCents,
@@ -69,15 +69,16 @@ export function TransactionsPage() {
           testId="period-view"
         />
 
-        {period && (
+        {statement && (
           <div className="flex items-baseline justify-between px-1">
             <p className={ui.muted} data-testid="period-range">
-              {formatShortDate(period.start)} – {formatShortDate(period.end)}
+              {formatShortDate(statement.period.start)} –{' '}
+              {formatShortDate(statement.period.end)}
             </p>
             <p className="text-sm">
               Total:{' '}
               <Money
-                cents={statementTotalCents(transactions, period, config.cutDay)}
+                cents={statementTotalCents(transactions, statement, config)}
                 className="font-semibold"
                 testId="period-total"
               />

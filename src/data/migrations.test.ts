@@ -70,4 +70,16 @@ describe('migrateToCurrent', () => {
     const data = sampleAppData()
     expect(migrateToCurrent(structuredClone(data))).toEqual(data)
   })
+
+  it('v1 → v2: las tarjetas existentes conservan la regla del día de corte', () => {
+    // Respaldo real de v1: las tarjetas aún no tenían `cutDayInNextPeriod`.
+    const current = sampleAppData()
+    const v1Card: Record<string, unknown> = { ...current.cards[0] }
+    delete v1Card.cutDayInNextPeriod
+    const v1 = { ...current, schemaVersion: 1, cards: [v1Card] }
+    const migrated = migrateToCurrent(v1)
+    expect(migrated.schemaVersion).toBe(2)
+    expect(migrated.cards.map((c) => c.cutDayInNextPeriod)).toEqual([false])
+    expect(migrated).toEqual(current)
+  })
 })

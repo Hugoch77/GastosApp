@@ -50,7 +50,7 @@ describe('AppDataSchema', () => {
   })
 
   it('rechaza una versión de esquema distinta', () => {
-    expect(issuesFor({ ...sampleAppData(), schemaVersion: 2 })).toContain(
+    expect(issuesFor({ ...sampleAppData(), schemaVersion: 99 })).toContain(
       'schemaVersion',
     )
   })

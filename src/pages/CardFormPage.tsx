@@ -5,6 +5,7 @@ import { Field } from '../components/Field'
 import { AlertIcon } from '../components/Icons'
 import { NotFound } from '../components/NotFound'
 import { PageHeader } from '../components/PageHeader'
+import { SegmentedControl } from '../components/SegmentedControl'
 import { ui } from '../components/styles'
 import type { Card, CardInput } from '../data/schema'
 import { activeCards } from '../data/selectors'
@@ -18,6 +19,12 @@ import { useGastos } from '../state/gastosContext'
 /** Normalmente hay al menos 20 días entre el corte y la fecha límite de pago. */
 const MIN_EXPECTED_GRACE_DAYS = 20
 const DAYS = Array.from({ length: 31 }, (_, i) => i + 1)
+
+type CutDayRule = 'same' | 'next'
+const CUT_DAY_RULE_OPTIONS: { value: CutDayRule; label: string }[] = [
+  { value: 'same', label: 'En ese corte' },
+  { value: 'next', label: 'Al siguiente' },
+]
 
 /** Ruta /tarjetas/nueva o /tarjetas/:id */
 export function CardFormPage() {
@@ -67,6 +74,9 @@ export function CardForm({ existing, onboarding = false }: CardFormProps) {
   const [dueDayText, setDueDayText] = useState(
     existing ? String(existing.dueDay) : '',
   )
+  const [cutDayRule, setCutDayRule] = useState<CutDayRule>(
+    existing?.cutDayInNextPeriod ? 'next' : 'same',
+  )
   const [bufferText, setBufferText] = useState(
     String(existing?.paymentBufferDays ?? 2),
   )
@@ -75,6 +85,7 @@ export function CardForm({ existing, onboarding = false }: CardFormProps) {
 
   const cutDay = Number(cutDayText)
   const dueDay = Number(dueDayText)
+  const cutDayInNextPeriod = cutDayRule === 'next'
   const paymentBufferDays = Number(bufferText)
   const isBufferValid =
     Number.isInteger(paymentBufferDays) &&
@@ -86,6 +97,7 @@ export function CardForm({ existing, onboarding = false }: CardFormProps) {
     cutDay && dueDay && isBufferValid
       ? getBillingCycle(today, {
           cutDay,
+          cutDayInNextPeriod,
           dueDay,
           paymentBufferDays,
           extraHolidays: data.settings.extraHolidays,
@@ -104,7 +116,13 @@ export function CardForm({ existing, onboarding = false }: CardFormProps) {
     if (Object.keys(found).length > 0) return { errors: found }
     return {
       errors: {},
-      input: { name: name.trim(), cutDay, dueDay, paymentBufferDays },
+      input: {
+        name: name.trim(),
+        cutDay,
+        cutDayInNextPeriod,
+        dueDay,
+        paymentBufferDays,
+      },
     }
   }
 
@@ -182,6 +200,22 @@ export function CardForm({ existing, onboarding = false }: CardFormProps) {
             invalid={!!errors.dueDay}
           />
         </Field>
+      </div>
+
+      <div className="space-y-1.5">
+        <p className={ui.label} id="cut-day-rule-label">
+          Lo que compras el mismo día de corte entra…
+        </p>
+        <SegmentedControl
+          label="Lo que compras el mismo día de corte entra"
+          options={CUT_DAY_RULE_OPTIONS}
+          value={cutDayRule}
+          onChange={setCutDayRule}
+          testId="cut-day-rule"
+        />
+        <p className={ui.muted}>
+          Revisa en qué estado de cuenta te aparecen esas compras.
+        </p>
       </div>
 
       <Field

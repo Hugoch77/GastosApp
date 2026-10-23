@@ -4,7 +4,11 @@
  * - compras a MSI, solo con la mensualidad que cae en ese estado;
  * - pagos y devoluciones con fecha dentro del periodo.
  */
-import { periodContaining, type Period } from './billing'
+import {
+  statementCutFor,
+  type CutSchedule,
+  type StatementDates,
+} from './billing'
 import { installmentSchedule } from './installments'
 import type { Transaction } from './types'
 
@@ -18,10 +22,11 @@ export interface StatementEntry<T extends Transaction = Transaction> {
 
 function entryFor<T extends Transaction>(
   transaction: T,
-  period: Period,
-  cutDay: number,
+  statement: StatementDates,
+  schedule: CutSchedule,
 ): StatementEntry<T> | null {
   const { type, date, installments, amountCents } = transaction
+  const { period, cutDate } = statement
 
   if (type !== 'charge') {
     return date >= period.start && date <= period.end
@@ -34,8 +39,8 @@ function entryFor<T extends Transaction>(
       date,
       amountCents,
       installments.months,
-      cutDay,
-    ).find((p) => p.cutDate === period.end)
+      schedule,
+    ).find((p) => p.cutDate === cutDate)
     return payment
       ? {
           transaction,
@@ -45,22 +50,22 @@ function entryFor<T extends Transaction>(
       : null
   }
 
-  return periodContaining(date, cutDay).end === period.end
+  return statementCutFor(date, schedule) === cutDate
     ? { transaction, amountCents, installment: null }
     : null
 }
 
 /**
- * Renglones del estado que cierra en `period.end`, del más reciente al más antiguo.
+ * Renglones del estado `statement`, del más reciente al más antiguo.
  * Es genérica para que la UI reciba de vuelta su propio tipo de movimiento completo.
  */
 export function statementEntries<T extends Transaction>(
   transactions: T[],
-  period: Period,
-  cutDay: number,
+  statement: StatementDates,
+  schedule: CutSchedule,
 ): StatementEntry<T>[] {
   return transactions
-    .map((t) => entryFor(t, period, cutDay))
+    .map((t) => entryFor(t, statement, schedule))
     .filter((entry): entry is StatementEntry<T> => entry !== null)
     .sort((a, b) => b.transaction.date.localeCompare(a.transaction.date))
 }

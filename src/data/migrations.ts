@@ -14,14 +14,27 @@ export type Migration = (
 ) => Record<string, unknown>
 
 export const MIGRATIONS: Record<number, Migration> = {
-  // Ejemplo para el futuro:
-  // 1: (data) => ({ ...data, schemaVersion: 2, nuevoCampo: [] }),
+  // v2: regla para los movimientos del día de corte. Las tarjetas existentes
+  // conservan el comportamiento de v1 (entran al estado que cierra ese día).
+  1: (data) => ({
+    ...data,
+    schemaVersion: 2,
+    cards: asArray(data.cards).map((card) => ({
+      ...card,
+      cutDayInNextPeriod: false,
+    })),
+  }),
 }
 
 export class SchemaVersionError extends Error {}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+/** Para migraciones: los datos aún no están validados, puede no ser un arreglo. */
+function asArray(value: unknown): Record<string, unknown>[] {
+  return Array.isArray(value) ? value.filter(isRecord) : []
 }
 
 /** Aplica en orden las migraciones necesarias, sin validar el resultado final. */

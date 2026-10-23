@@ -10,9 +10,22 @@ import {
   periodEndingAt,
   statementForCut,
   suggestedPaymentDate,
+  statementCutFor,
   type BillingConfig,
+  type CutSchedule,
 } from './billing'
 import { addDays, toIsoDate } from './dates'
+
+/** Lo del día de corte entra al estado que cierra ese día. */
+const sameDay = (cutDay: number): CutSchedule => ({
+  cutDay,
+  cutDayInNextPeriod: false,
+})
+/** Lo del día de corte entra al estado siguiente (el banco corta al iniciar el día). */
+const nextDay = (cutDay: number): CutSchedule => ({
+  cutDay,
+  cutDayInNextPeriod: true,
+})
 
 describe('lastCutBefore / nextCutOnOrAfter', () => {
   it.each([
@@ -44,44 +57,73 @@ describe('periodEndingAt / periodContaining', () => {
   ])(
     'periodo que cierra el %s (corte %i) va de %s a %s',
     (cut, cutDay, start, end) => {
-      expect(periodEndingAt(cut, cutDay)).toEqual({ start, end })
+      expect(periodEndingAt(cut, sameDay(cutDay))).toEqual({ start, end })
     },
   )
 
   it('un movimiento hecho el día de corte pertenece al estado que cierra ese día', () => {
-    expect(periodContaining('2026-10-15', 15)).toEqual({
+    expect(periodContaining('2026-10-15', sameDay(15))).toEqual({
       start: '2026-09-16',
       end: '2026-10-15',
     })
   })
 
   it('un movimiento del día siguiente al corte pertenece al nuevo periodo', () => {
-    expect(periodContaining('2026-10-16', 15)).toEqual({
+    expect(periodContaining('2026-10-16', sameDay(15))).toEqual({
       start: '2026-10-16',
       end: '2026-11-15',
     })
   })
 
-  it('propiedad: para cualquier día de corte los periodos son contiguos, sin huecos ni traslapes', () => {
+  it('propiedad: con cualquier día y regla de corte los periodos son contiguos, sin huecos ni traslapes', () => {
     fc.assert(
       fc.property(
         fc.integer({ min: 1, max: 31 }),
+        fc.boolean(),
         fc.integer({ min: 2000, max: 2100 }),
         fc.integer({ min: 1, max: 12 }),
-        (cutDay, year, month) => {
-          let period = periodContaining(toIsoDate(year, month, 1), cutDay)
+        (cutDay, cutDayInNextPeriod, year, month) => {
+          const schedule = { cutDay, cutDayInNextPeriod }
+          let period = periodContaining(toIsoDate(year, month, 1), schedule)
           for (let i = 0; i < 36; i++) {
-            const next = periodContaining(addDays(period.end, 1), cutDay)
+            const next = periodContaining(addDays(period.end, 1), schedule)
             expect(next.start).toBe(addDays(period.end, 1))
             expect(next.start <= next.end).toBe(true)
             // cualquier día dentro del periodo debe resolver a ese mismo periodo
-            expect(periodContaining(next.start, cutDay)).toEqual(next)
-            expect(periodContaining(next.end, cutDay)).toEqual(next)
+            expect(periodContaining(next.start, schedule)).toEqual(next)
+            expect(periodContaining(next.end, schedule)).toEqual(next)
             period = next
           }
         },
       ),
     )
+  })
+})
+
+describe('regla "el día de corte entra al estado siguiente"', () => {
+  it.each([
+    // [corte, díaCorte, inicio, fin]
+    ['2026-10-05', 5, '2026-09-05', '2026-10-04'],
+    ['2027-02-28', 31, '2027-01-31', '2027-02-27'], // 31 recortado en febrero
+    ['2027-03-31', 31, '2027-02-28', '2027-03-30'],
+    ['2026-01-01', 1, '2025-12-01', '2025-12-31'], // cruza de año
+  ])(
+    'periodo que cierra el %s (corte %i) va de %s a %s',
+    (cut, cutDay, start, end) => {
+      expect(periodEndingAt(cut, nextDay(cutDay))).toEqual({ start, end })
+    },
+  )
+
+  it.each([
+    ['2026-10-04', '2026-10-05'], // día antes del corte → ese corte
+    ['2026-10-05', '2026-11-05'], // día de corte → el siguiente
+    ['2026-10-06', '2026-11-05'],
+  ])('movimiento del %s → estado que corta el %s', (date, cut) => {
+    expect(statementCutFor(date, nextDay(5))).toBe(cut)
+  })
+
+  it('con la regla normal el día de corte se queda en ese corte', () => {
+    expect(statementCutFor('2026-10-05', sameDay(5))).toBe('2026-10-05')
   })
 })
 
@@ -114,7 +156,12 @@ describe('suggestedPaymentDate (2 días antes, ajustado al hábil anterior)', ()
 })
 
 describe('statementForCut', () => {
-  const config: BillingConfig = { cutDay: 31, dueDay: 20, paymentBufferDays: 2 }
+  const config: BillingConfig = {
+    cutDay: 31,
+    cutDayInNextPeriod: false,
+    dueDay: 20,
+    paymentBufferDays: 2,
+  }
 
   it('fecha límite en domingo: la nominal se conserva y la efectiva pasa al lunes', () => {
     // corte 2026-08-31 → límite domingo 2026-09-20
@@ -137,7 +184,12 @@ describe('statementForCut', () => {
 })
 
 describe('getBillingCycle', () => {
-  const config: BillingConfig = { cutDay: 15, dueDay: 5, paymentBufferDays: 2 }
+  const config: BillingConfig = {
+    cutDay: 15,
+    cutDayInNextPeriod: false,
+    dueDay: 5,
+    paymentBufferDays: 2,
+  }
 
   it('antes del corte: facturado = ciclo anterior, actual cierra este mes', () => {
     const cycle = getBillingCycle('2026-10-10', config)
@@ -177,6 +229,7 @@ describe('getBillingCycle', () => {
   it('corte 31 con hoy en febrero', () => {
     const cycle = getBillingCycle('2027-02-10', {
       cutDay: 31,
+      cutDayInNextPeriod: false,
       dueDay: 20,
       paymentBufferDays: 2,
     })
@@ -185,12 +238,49 @@ describe('getBillingCycle', () => {
     expect(cycle.billed.cutDate).toBe('2027-01-31')
     expect(cycle.billed.dueDate).toBe('2027-02-20')
   })
+
+  describe('banco que pasa el día de corte al siguiente estado (corte 5, pago 25)', () => {
+    const bbva: BillingConfig = {
+      cutDay: 5,
+      cutDayInNextPeriod: true,
+      dueDay: 25,
+      paymentBufferDays: 2,
+    }
+
+    it('a mitad del ciclo', () => {
+      const cycle = getBillingCycle('2026-10-23', bbva)
+      expect(cycle.billed.period).toEqual({
+        start: '2026-09-05',
+        end: '2026-10-04',
+      })
+      expect(cycle.billed.dueDate).toBe('2026-10-25')
+      expect(cycle.billed.suggestedPaymentDate).toBe('2026-10-23')
+      expect(cycle.current.period).toEqual({
+        start: '2026-10-05',
+        end: '2026-11-04',
+      })
+    })
+
+    it('el día de corte el estado ya cerró y empieza el ciclo nuevo', () => {
+      const cycle = getBillingCycle('2026-11-05', bbva)
+      expect(cycle.billed.cutDate).toBe('2026-11-05')
+      expect(cycle.current.cutDate).toBe('2026-12-05')
+      expect(cycle.isCutDay).toBe(false)
+    })
+
+    it('el día anterior al corte sigue en el ciclo que cierra mañana', () => {
+      const cycle = getBillingCycle('2026-11-04', bbva)
+      expect(cycle.current.cutDate).toBe('2026-11-05')
+      expect(cycle.billed.cutDate).toBe('2026-10-05')
+    })
+  })
 })
 
 describe('paymentUrgency', () => {
   // límite miércoles 2026-10-28 → sugerida lunes 2026-10-26
   const statement = statementForCut('2026-10-08', {
     cutDay: 8,
+    cutDayInNextPeriod: false,
     dueDay: 28,
     paymentBufferDays: 2,
   })

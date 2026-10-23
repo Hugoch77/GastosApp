@@ -6,7 +6,7 @@
  * - La primera cuota cae en el estado de cuenta de la compra; cada cuota siguiente,
  *   en el estado siguiente.
  */
-import { nextCutOnOrAfter } from './billing'
+import { nextCutOnOrAfter, statementCutFor, type CutSchedule } from './billing'
 import { addDays, type IsoDate } from './dates'
 import { assertCents } from './money'
 
@@ -43,12 +43,12 @@ export function installmentSchedule(
   purchaseDate: IsoDate,
   totalCents: number,
   months: number,
-  cutDay: number,
+  schedule: CutSchedule,
 ): InstallmentPayment[] {
-  let cutDate = nextCutOnOrAfter(purchaseDate, cutDay)
+  let cutDate = statementCutFor(purchaseDate, schedule)
   return splitInstallments(totalCents, months).map((amountCents, i) => {
     const payment = { number: i + 1, cutDate, amountCents }
-    cutDate = nextCutOnOrAfter(addDays(cutDate, 1), cutDay)
+    cutDate = nextCutOnOrAfter(addDays(cutDate, 1), schedule.cutDay)
     return payment
   })
 }

@@ -74,3 +74,28 @@ def test_payment_status_changes_as_due_date_approaches(page: Page, set_today):
         page, amount="500", description="", date="2026-11-04", transaction_type="payment"
     )
     expect(dashboard.payment_status).to_have_attribute("data-status", "paid")
+
+
+def test_bank_that_moves_cut_day_purchases_to_next_statement(page: Page, set_today):
+    # Corte día 5, pago día 25; lo comprado el día 5 se paga hasta el mes siguiente.
+    set_today("2026-10-05")
+    page.goto("/")
+    form = CardFormPage(page)
+    form.fill("Platinum", cut_day=5, due_day=25, cut_day_in_next_period=True)
+    form.save()
+    dashboard = DashboardPage(page)
+    expect(dashboard.payment_hero).to_be_visible()
+    # El día de corte el estado ya cerró: el próximo corte es el siguiente mes.
+    expect(dashboard.next_cut).to_have_text("jue 5 de nov")
+
+    add_transaction(page, amount="800", description="Día anterior", date="2026-10-04")
+    add_transaction(page, amount="300", description="Día de corte", date="2026-10-05")
+
+    expect(dashboard.no_interest_amount).to_have_text("$800.00")
+    expect(dashboard.due_date).to_have_text("domingo, 25 de octubre")
+    expect(dashboard.current_period).to_have_text("$300.00")
+
+    transactions = TransactionsPage(page)
+    transactions.open()
+    expect(transactions.period_range).to_have_text("lun 5 de oct – mié 4 de nov")
+    expect(transactions.descriptions).to_have_text(["Día de corte"])
