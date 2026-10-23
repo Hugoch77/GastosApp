@@ -194,6 +194,10 @@ export class LocalStorageRepository implements GastosRepository {
     if (result.ok) this.write(result.data)
     return result
   }
+
+  async clearAll(): Promise<void> {
+    this.deps.storage.removeItem(STORAGE_KEY)
+  }
 }
 
 function findActiveIndex(

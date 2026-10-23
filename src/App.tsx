@@ -1,17 +1,42 @@
-import { todayInMexico } from './lib/today'
+import { Navigate, Route, Routes } from 'react-router'
+import { TabLayout } from './components/TabLayout'
+import { activeCards } from './data/selectors'
+import { CardFormPage } from './pages/CardFormPage'
+import { DashboardPage } from './pages/DashboardPage'
+import { OnboardingPage } from './pages/OnboardingPage'
+import { SettingsPage } from './pages/SettingsPage'
+import { StorageErrorPage } from './pages/StorageErrorPage'
+import { TransactionFormPage } from './pages/TransactionFormPage'
+import { TransactionsPage } from './pages/TransactionsPage'
+import { useGastosContext } from './state/gastosContext'
 
-// Pantalla provisional: la UI real llega en la fase 4.
 function App() {
+  const { state } = useGastosContext()
+
+  if (state.status === 'loading') return null
+  if (state.status === 'corrupted')
+    return <StorageErrorPage message={state.message} />
+  if (activeCards(state.data).length === 0) return <OnboardingPage />
+
   return (
-    <main className="mx-auto min-h-dvh max-w-md bg-slate-50 p-4 text-slate-900">
-      <h1 className="text-2xl font-bold" data-testid="app-title">
-        GastosApp
-      </h1>
-      <p className="mt-2 text-slate-600">
-        En construcción · Hoy es{' '}
-        <span data-testid="today">{todayInMexico()}</span>
-      </p>
-    </main>
+    <div className="mx-auto max-w-md">
+      <Routes>
+        {/* Pantallas principales con barra de pestañas */}
+        <Route element={<TabLayout />}>
+          <Route index element={<DashboardPage />} />
+          <Route path="movimientos" element={<TransactionsPage />} />
+          <Route path="ajustes" element={<SettingsPage />} />
+        </Route>
+
+        {/* Formularios a pantalla completa */}
+        <Route path="movimientos/nuevo" element={<TransactionFormPage />} />
+        <Route path="movimientos/:id" element={<TransactionFormPage />} />
+        <Route path="tarjetas/nueva" element={<CardFormPage />} />
+        <Route path="tarjetas/:id" element={<CardFormPage />} />
+
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </div>
   )
 }
 

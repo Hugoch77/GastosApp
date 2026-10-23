@@ -33,6 +33,9 @@ export interface GastosRepository {
   exportBackup(): Promise<string>
   /** Reemplaza todos los datos. Si el respaldo es inválido no modifica nada. */
   importBackup(json: string): Promise<ParseBackupResult>
+
+  /** Borra todos los datos (la app vuelve al estado inicial). */
+  clearAll(): Promise<void>
 }
 
 export class NotFoundError extends Error {}

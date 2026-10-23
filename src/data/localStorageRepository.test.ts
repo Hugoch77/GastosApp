@@ -255,6 +255,12 @@ describe('datos guardados dañados', () => {
     },
   )
 
+  it('se puede empezar de cero borrando todo', async () => {
+    storage.setItem(STORAGE_KEY, '{ roto')
+    await repo.clearAll()
+    expect((await repo.getData()).cards).toEqual([])
+  })
+
   it('se puede recuperar importando un respaldo', async () => {
     storage.setItem(STORAGE_KEY, '{ roto')
     const backup = serializeBackup(sampleAppData(), '2026-10-23T00:00:00.000Z')
