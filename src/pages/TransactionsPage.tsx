@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { CardSwitcher } from '../components/CardSwitcher'
 import { Money } from '../components/Money'
@@ -45,12 +46,23 @@ export function TransactionsPage() {
   const categoryFilter = searchParams.get('categoria') ?? ''
   const isFiltering = query.trim() !== '' || categoryFilter !== ''
 
+  // React Router arma la URL nueva con los parámetros del último render (incluso
+  // en su forma funcional). Si llegan dos cambios antes de que React vuelva a
+  // renderizar (p. ej. borrar la búsqueda y elegir categoría), el segundo
+  // pisaría al primero. Por eso se recuerdan aquí los parámetros ya enviados
+  // que todavía no llegan al render.
+  const pendingParams = useRef<URLSearchParams | null>(null)
+  useEffect(() => {
+    pendingParams.current = null
+  }, [searchParams])
+
   function updateParams(changes: Record<string, string>) {
-    const next = new URLSearchParams(searchParams)
+    const next = new URLSearchParams(pendingParams.current ?? searchParams)
     for (const [key, value] of Object.entries(changes)) {
       if (value) next.set(key, value)
       else next.delete(key)
     }
+    pendingParams.current = next
     setSearchParams(next, { replace: true })
   }
 
