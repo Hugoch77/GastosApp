@@ -71,6 +71,8 @@ horaria de la Ciudad de México.
 - [Vitest](https://vitest.dev/) + [fast-check](https://fast-check.dev/) para pruebas unitarias y de propiedades
 - [pytest](https://pytest.org/) + [Playwright](https://playwright.dev/python/) para pruebas E2E con Page Objects
 - [oxlint](https://oxc.rs/) + [Prettier](https://prettier.io/) para lint y formato
+- API de sincronización (en desarrollo): [FastAPI](https://fastapi.tiangolo.com/) +
+  [SQLAlchemy](https://www.sqlalchemy.org/) + [Alembic](https://alembic.sqlalchemy.org/) sobre Postgres
 - GitHub Actions para integración continua y publicación en GitHub Pages
 
 ## Estructura
@@ -86,6 +88,7 @@ src/
   pages/       Pantallas
 e2e/           Pruebas E2E (pytest + Playwright)
 tools/         Scripts de apoyo: importación desde Excel y generación de íconos
+api/           API de sincronización entre dispositivos (FastAPI + Postgres)
 ```
 
 La lógica de negocio (`src/domain`) no depende de React ni del almacenamiento, y nunca lee el reloj del sistema:
@@ -136,6 +139,26 @@ El Excel necesita una hoja `Datos compra` con las columnas `MONTO TOTAL`, `# DE 
 `DETALLE` (con la fecha al final, p. ej. `Tacos 8/10/26`). El JSON se guarda junto al Excel y se importa en
 **Ajustes → Importar respaldo**. Usa `--help` para ver todas las opciones.
 
+### API de sincronización (en desarrollo)
+
+Permite usar los mismos datos en varios dispositivos. Necesita un Postgres (p. ej. [Neon](https://neon.com),
+plan gratuito); copia `api/.env.example` como `api/.env` y pon las cadenas de conexión.
+
+```bash
+.venv/Scripts/python -m pip install -r api/requirements-dev.txt
+cd api
+../.venv/Scripts/python -m alembic upgrade head                  # crea o actualiza las tablas
+../.venv/Scripts/python -m app.cli create-user tu@correo.com     # único usuario (no hay registro público)
+../.venv/Scripts/python -m uvicorn app.main:app --reload         # http://localhost:8000/docs
+cd ..
+.venv/Scripts/python -m pytest api                               # usa TEST_DATABASE_URL
+```
+
+- `POST /auth/login` da un token de larga duración; la sesión dura mientras se use al menos una vez cada
+  180 días. `POST /auth/logout` y `/auth/logout-all` la cierran en este o en todos los dispositivos.
+- `POST /sync` sube los cambios del dispositivo y regresa los de los demás desde su `cursor`. Gana el cambio
+  más reciente (`updatedAt`) y los borrados viajan como `deletedAt`.
+
 ### Pruebas E2E
 
 ```bash
@@ -156,8 +179,9 @@ Cada push ejecuta el workflow [`ci.yml`](.github/workflows/ci.yml):
 
 1. **Checks**: lint, formato, tipos, pruebas unitarias y build.
 2. **Tools**: pruebas del importador de Excel (pytest).
-3. **E2E**: pruebas con Playwright sobre el build de producción.
-4. **Deploy** (solo en `master`): si todo pasa, publica el build en GitHub Pages.
+3. **API**: pruebas de la API con un Postgres temporal (pytest).
+4. **E2E**: pruebas con Playwright sobre el build de producción.
+5. **Deploy** (solo en `master`): si todo pasa, publica el build en GitHub Pages.
 
 ## Datos y privacidad
 
