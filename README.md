@@ -36,7 +36,11 @@ Tus datos se guardan solo en tu dispositivo.
 - **Respaldo**: exportar e importar todos los datos en JSON, con un recordatorio cuando hay cambios sin respaldar.
 - **Importación desde Excel**: `tools/excel_to_json.py` convierte una hoja de compras en un respaldo listo
   para importar, incluyendo compras a MSI que siguen vigentes.
+- **Captura por voz**: dictas "250 en Rappi ayer" o "Llantas 9 mil 220 a 6 meses" y el formulario se llena
+  solo (monto, fecha, MSI, tipo y categoría); revisas y guardas. Usa el reconocimiento de voz del navegador,
+  sin costo. También acepta el texto en el enlace: `#/movimientos/nuevo?texto=250 en Rappi ayer`.
 - **PWA**: instalable, funciona sin conexión, tiene modo oscuro y avisa cuando hay una versión nueva.
+  Al mantener presionado el ícono aparecen los accesos directos _Gasto por voz_ y _Nuevo movimiento_.
 
 ## Cómo calcula las fechas
 
@@ -100,6 +104,17 @@ npm run dev          # http://localhost:5173
 | `npm run lint`       | Lint                                              |
 | `npm run typecheck`  | Verificación de tipos                             |
 | `npm run format`     | Formatea el código (`format:check` solo verifica) |
+
+### Gasto por voz sin tocar la pantalla (Android, opcional)
+
+Con [Automate](https://play.google.com/store/apps/details?id=com.llamalab.automate) (gratis) se puede crear
+un flujo de dos bloques:
+
+1. **Speech recognition**: guarda lo que dictes en una variable, p. ej. `texto`.
+2. **Browse URL** (o _App start_ con la acción VIEW):
+   `https://hugoch77.github.io/GastosApp/#/movimientos/nuevo?texto={urlEncode(texto)}`
+
+Se inicia con un widget o un acceso directo de Automate y abre el formulario ya lleno.
 
 ### Importar desde Excel
 

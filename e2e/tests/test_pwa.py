@@ -26,6 +26,13 @@ def test_manifest_is_valid_and_icons_exist(page: Page, base_url: str):
     for icon in manifest["icons"]:
         assert page.request.get(f"{base_url}/{icon['src']}").ok, icon["src"]
 
+    # Acceso directo "Gasto por voz" (mantener presionado el ícono en Android).
+    voice = next(s for s in manifest["shortcuts"] if s["name"] == "Gasto por voz")
+    assert voice["url"].endswith("#/movimientos/nuevo?voz=1")
+    for shortcut in manifest["shortcuts"]:
+        for icon in shortcut["icons"]:
+            assert page.request.get(f"{base_url}/{icon['src']}").ok, icon["src"]
+
 
 def test_works_offline_with_saved_data(page: Page, set_today):
     set_today("2026-10-23")

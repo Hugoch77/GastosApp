@@ -39,12 +39,39 @@ def icon_svg(rounded: bool) -> str:
 """
 
 
+def shortcut_svg(symbol: str) -> str:
+    """Ícono de acceso directo (mantener presionado el ícono de la app en Android).
+
+    Fondo completo porque Android lo recorta en círculo; el símbolo va al centro.
+    """
+    symbols = {
+        # Micrófono: "Gasto por voz"
+        "voice": """<rect x="206" y="112" width="100" height="176" rx="50" fill="#ffffff"/>
+  <path d="M146 236a110 110 0 0 0 220 0M256 346v54" fill="none" stroke="#ffffff"
+        stroke-width="32" stroke-linecap="round"/>""",
+        # Más: "Nuevo movimiento"
+        "new": """<path d="M256 136v240M136 256h240" fill="none" stroke="#ffffff"
+        stroke-width="40" stroke-linecap="round"/>""",
+    }
+    return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="{INDIGO}"/>
+  {symbols[symbol]}
+</svg>
+"""
+
+
 # (archivo, tamaño en px, ¿esquinas redondeadas?)
 PNG_ICONS = [
     ("pwa-192x192.png", 192, True),
     ("pwa-512x512.png", 512, True),
     ("maskable-512x512.png", 512, False),
     ("apple-touch-icon.png", 180, False),
+]
+
+# (archivo, símbolo)
+SHORTCUT_ICONS = [
+    ("shortcut-voice-192x192.png", "voice"),
+    ("shortcut-new-192x192.png", "new"),
 ]
 
 
@@ -66,6 +93,9 @@ def main() -> None:
         page = browser.new_page()
         for file_name, size, rounded in PNG_ICONS:
             render_png(page, icon_svg(rounded), size, PUBLIC_DIR / file_name)
+            print(f"public/{file_name}")
+        for file_name, symbol in SHORTCUT_ICONS:
+            render_png(page, shortcut_svg(symbol), 192, PUBLIC_DIR / file_name)
             print(f"public/{file_name}")
         browser.close()
 

@@ -1,7 +1,8 @@
-import { useState, type FormEvent } from 'react'
-import { useParams } from 'react-router'
+import { useEffect, useState, type FormEvent } from 'react'
+import { useParams, useSearchParams } from 'react-router'
 import { ConfirmButton } from '../components/ConfirmButton'
 import { Field } from '../components/Field'
+import { MicIcon } from '../components/Icons'
 import { NotFound } from '../components/NotFound'
 import { PageHeader } from '../components/PageHeader'
 import { SegmentedControl } from '../components/SegmentedControl'
@@ -15,9 +16,11 @@ import {
   type InstallmentPayment,
 } from '../domain/installments'
 import { centsToInputValue, formatMXN, parseMXN } from '../domain/money'
+import { parseSpokenTransaction } from '../domain/spokenTransaction'
 import type { TransactionType } from '../domain/types'
 import { useGoBack } from '../hooks/useGoBack'
 import { useSelectedCard } from '../hooks/useSelectedCard'
+import { useSpeechRecognition } from '../hooks/useSpeechRecognition'
 import { useToday } from '../hooks/useToday'
 import { formatDateWithYear, formatShortDate } from '../lib/format'
 import { useGastos } from '../state/gastosContext'
@@ -61,23 +64,62 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
   const { card: selected } = useSelectedCard()
   const goBack = useGoBack('/movimientos')
   const cards = activeCards(data)
+  const categories = activeCategories(data)
+
+  // Solo al crear: ?texto=... prellena el formulario (p. ej. desde un atajo) y
+  // ?voz=1 abre el micrófono (acceso directo "Gasto por voz").
+  const [searchParams] = useSearchParams()
+  const initialText = existing ? null : searchParams.get('texto')
+  const listenOnOpen = !existing && searchParams.get('voz') === '1'
+  const [spoken] = useState(() =>
+    initialText ? parseSpokenTransaction(initialText, today, categories) : null,
+  )
+  const [heard, setHeard] = useState(initialText)
 
   const [cardId, setCardId] = useState(existing?.cardId ?? selected.id)
-  const [type, setType] = useState<TransactionType>(existing?.type ?? 'charge')
-  const [amountText, setAmountText] = useState(
-    existing ? centsToInputValue(existing.amountCents) : '',
+  const [type, setType] = useState<TransactionType>(
+    existing?.type ?? spoken?.type ?? 'charge',
   )
-  const [description, setDescription] = useState(existing?.description ?? '')
-  const [date, setDate] = useState(existing?.date ?? today)
-  const [categoryId, setCategoryId] = useState(existing?.categoryId ?? 'other')
+  const [amountText, setAmountText] = useState(() => {
+    const cents = existing?.amountCents ?? spoken?.amountCents
+    return cents ? centsToInputValue(cents) : ''
+  })
+  const [description, setDescription] = useState(
+    existing?.description ?? spoken?.description ?? '',
+  )
+  const [date, setDate] = useState(existing?.date ?? spoken?.date ?? today)
+  const [categoryId, setCategoryId] = useState(
+    existing?.categoryId ?? spoken?.categoryId ?? 'other',
+  )
   const [isInstallments, setIsInstallments] = useState(
-    Boolean(existing?.installments),
+    Boolean(existing?.installments ?? spoken?.months),
   )
   const [monthsText, setMonthsText] = useState(
-    String(existing?.installments?.months ?? 12),
+    String(existing?.installments?.months ?? spoken?.months ?? 12),
   )
   const [errors, setErrors] = useState<Errors>({})
   const [saving, setSaving] = useState(false)
+
+  /** Llena el formulario con lo que se entendió de la frase dictada. */
+  function applySpokenText(text: string) {
+    const result = parseSpokenTransaction(text, today, categories)
+    setHeard(text)
+    setType(result.type)
+    if (result.amountCents !== null)
+      setAmountText(centsToInputValue(result.amountCents))
+    setDescription(result.description)
+    setDate(result.date)
+    if (result.categoryId) setCategoryId(result.categoryId)
+    setIsInstallments(result.months !== null)
+    if (result.months !== null) setMonthsText(String(result.months))
+    setErrors({})
+  }
+
+  const speech = useSpeechRecognition(applySpokenText)
+  const startListening = speech.start
+  useEffect(() => {
+    if (listenOnOpen) startListening()
+  }, [listenOnOpen, startListening])
 
   const card = cards.find((c) => c.id === cardId) ?? selected
   const amountCents = parseMXN(amountText)
@@ -168,6 +210,48 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
         className="space-y-5 px-4 pb-10"
         noValidate
       >
+        {!existing && (speech.supported || heard) && (
+          <section className={`${ui.card} space-y-2`} data-testid="voice-panel">
+            {speech.supported && (
+              <button
+                type="button"
+                onClick={speech.listening ? speech.stop : speech.start}
+                aria-pressed={speech.listening}
+                className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 font-semibold ${
+                  speech.listening
+                    ? 'animate-pulse bg-red-600 text-white'
+                    : 'bg-indigo-50 text-indigo-700 active:bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-300'
+                }`}
+                data-testid="voice-button"
+              >
+                <MicIcon className="size-5" />
+                {speech.listening
+                  ? 'Escuchando… toca para terminar'
+                  : 'Dictar movimiento'}
+              </button>
+            )}
+            {heard ? (
+              <p className="text-sm" data-testid="voice-transcript">
+                Escuché: “{heard}”. Revisa los datos antes de guardar.
+              </p>
+            ) : (
+              <p className={ui.muted}>
+                Di algo como “250 en Rappi ayer” o “Llantas 9 mil 220 a 6
+                meses”.
+              </p>
+            )}
+            {speech.error && (
+              <p
+                className="text-sm text-red-600 dark:text-red-400"
+                role="alert"
+                data-testid="voice-error"
+              >
+                {speech.error}
+              </p>
+            )}
+          </section>
+        )}
+
         <SegmentedControl
           label="Tipo de movimiento"
           options={TYPE_OPTIONS}
@@ -185,7 +269,8 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
             value={amountText}
             onChange={(e) => setAmountText(e.target.value)}
             className={`${ui.input} text-2xl font-semibold tabular-nums ${errors.amount ? ui.inputError : ''}`}
-            autoFocus={!existing}
+            // Con voz o texto dictado no se abre el teclado.
+            autoFocus={!existing && !listenOnOpen && !initialText}
           />
         </Field>
 
@@ -233,7 +318,7 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
               onChange={(e) => setCategoryId(e.target.value)}
               className={ui.input}
             >
-              {activeCategories(data).map((c) => (
+              {categories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.icon} {c.name}
                 </option>

@@ -38,6 +38,35 @@ export default defineConfig({
             purpose: 'maskable',
           },
         ],
+        // Accesos directos al mantener presionado el ícono de la app (Android);
+        // se pueden arrastrar a la pantalla de inicio como íconos propios.
+        shortcuts: [
+          {
+            name: 'Gasto por voz',
+            short_name: 'Por voz',
+            description: 'Dictar un movimiento nuevo',
+            url: './#/movimientos/nuevo?voz=1',
+            icons: [
+              {
+                src: 'shortcut-voice-192x192.png',
+                sizes: '192x192',
+                type: 'image/png',
+              },
+            ],
+          },
+          {
+            name: 'Nuevo movimiento',
+            short_name: 'Nuevo',
+            url: './#/movimientos/nuevo',
+            icons: [
+              {
+                src: 'shortcut-new-192x192.png',
+                sizes: '192x192',
+                type: 'image/png',
+              },
+            ],
+          },
+        ],
       },
       workbox: {
         // Todo el build queda en caché para funcionar sin conexión.
