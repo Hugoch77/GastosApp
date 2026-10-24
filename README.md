@@ -39,6 +39,9 @@ Tus datos se guardan solo en tu dispositivo.
 - **Captura por voz**: dictas "250 en Rappi ayer" o "Llantas 9 mil 220 a 6 meses" y el formulario se llena
   solo (monto, fecha, MSI, tipo y categoría); revisas y guardas. Usa el reconocimiento de voz del navegador,
   sin costo. También acepta el texto en el enlace: `#/movimientos/nuevo?texto=250 en Rappi ayer`.
+- **Compartir a la app**: con la app instalada, _GastosApp_ aparece en el menú _Compartir_ de Android;
+  al compartirle un texto (p. ej. un SMS o una notificación del banco) abre el formulario ya prellenado
+  con las mismas reglas de la captura por voz.
 - **PWA**: instalable, funciona sin conexión, tiene modo oscuro y avisa cuando hay una versión nueva.
   Al mantener presionado el ícono aparecen los accesos directos _Gasto por voz_ y _Nuevo movimiento_.
 

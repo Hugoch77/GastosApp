@@ -38,6 +38,18 @@ export default defineConfig({
             purpose: 'maskable',
           },
         ],
+        // Aparece en el menú "Compartir" de Android (con la app instalada). El texto
+        // llega como ./?compartido-texto=... y src/lib/shareTarget.ts lo manda al
+        // formulario. Los nombres deben coincidir con SHARE_PARAMS.
+        share_target: {
+          action: './',
+          method: 'GET',
+          params: {
+            title: 'compartido-titulo',
+            text: 'compartido-texto',
+            url: 'compartido-enlace',
+          },
+        },
         // Accesos directos al mantener presionado el ícono de la app (Android);
         // se pueden arrastrar a la pantalla de inicio como íconos propios.
         shortcuts: [

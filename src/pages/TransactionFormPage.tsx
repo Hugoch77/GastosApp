@@ -75,6 +75,8 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
     initialText ? parseSpokenTransaction(initialText, today, categories) : null,
   )
   const [heard, setHeard] = useState(initialText)
+  // El texto pudo llegar por el micrófono o desde fuera (enlace o "Compartir").
+  const [heardByVoice, setHeardByVoice] = useState(false)
 
   const [cardId, setCardId] = useState(existing?.cardId ?? selected.id)
   const [type, setType] = useState<TransactionType>(
@@ -104,6 +106,7 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
   function applySpokenText(text: string) {
     const result = parseSpokenTransaction(text, today, categories)
     setHeard(text)
+    setHeardByVoice(true)
     setType(result.type)
     if (result.amountCents !== null)
       setAmountText(centsToInputValue(result.amountCents))
@@ -232,7 +235,8 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
             )}
             {heard ? (
               <p className="text-sm" data-testid="voice-transcript">
-                Escuché: “{heard}”. Revisa los datos antes de guardar.
+                {heardByVoice ? 'Escuché' : 'Recibí'}: “{heard}”. Revisa los
+                datos antes de guardar.
               </p>
             ) : (
               <p className={ui.muted}>
