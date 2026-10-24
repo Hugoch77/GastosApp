@@ -48,7 +48,7 @@ export function UpdatePrompt() {
         <button
           type="button"
           onClick={() => void updateServiceWorker()}
-          className="rounded-lg bg-indigo-500 px-3 py-1.5 font-semibold"
+          className="rounded-lg bg-brand-600 px-3 py-1.5 font-semibold"
           data-testid="pwa-update"
         >
           Actualizar

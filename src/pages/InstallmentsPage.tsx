@@ -148,7 +148,7 @@ function Bar({ value, max }: { value: number; max: number }) {
     <span className="block h-3" aria-hidden="true">
       {value > 0 && (
         <span
-          className="block h-full min-w-1 rounded-r bg-indigo-500"
+          className="block h-full min-w-1 rounded-r bg-brand-600"
           style={{ width: `${percent}%` }}
         />
       )}
@@ -199,7 +199,7 @@ function PlanRow({
             aria-valuenow={billedCount}
           >
             <span
-              className="block h-full rounded-full bg-indigo-500"
+              className="block h-full rounded-full bg-brand-600"
               style={{ width: `${(billedCount / months) * 100}%` }}
             />
           </span>

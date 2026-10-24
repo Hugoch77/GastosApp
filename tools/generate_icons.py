@@ -13,13 +13,14 @@ from playwright.sync_api import sync_playwright
 
 PUBLIC_DIR = Path(__file__).resolve().parent.parent / "public"
 
-INDIGO = "#4f46e5"
-INDIGO_LIGHT = "#c7d2fe"
-EMERALD = "#10b981"
+# Mismos tonos que la paleta `brand` de la app (emerald de Tailwind).
+BRAND = "#059669"  # emerald-600
+BRAND_LIGHT = "#a7f3d0"  # emerald-200
+BRAND_DARK = "#065f46"  # emerald-800
 
 
 def icon_svg(rounded: bool) -> str:
-    """Tarjeta de crédito con una palomita verde ("pagado a tiempo").
+    """Tarjeta de crédito con una palomita ("pagado a tiempo") sobre fondo verde.
 
     - rounded=True: esquinas redondeadas y fondo transparente (favicon, ícono normal).
     - rounded=False: fondo cuadrado completo, para íconos "maskable" (Android recorta
@@ -28,11 +29,11 @@ def icon_svg(rounded: bool) -> str:
     """
     corner = 112 if rounded else 0
     return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="{corner}" fill="{INDIGO}"/>
+  <rect width="512" height="512" rx="{corner}" fill="{BRAND}"/>
   <rect x="96" y="148" width="320" height="216" rx="32" fill="#ffffff"/>
-  <rect x="96" y="196" width="320" height="44" fill="{INDIGO_LIGHT}"/>
-  <rect x="132" y="292" width="96" height="24" rx="12" fill="{INDIGO}" opacity="0.35"/>
-  <circle cx="352" cy="304" r="36" fill="{EMERALD}"/>
+  <rect x="96" y="196" width="320" height="44" fill="{BRAND_LIGHT}"/>
+  <rect x="132" y="292" width="96" height="24" rx="12" fill="{BRAND}" opacity="0.35"/>
+  <circle cx="352" cy="304" r="36" fill="{BRAND_DARK}"/>
   <path d="M335 304l12 12 22-24" fill="none" stroke="#ffffff" stroke-width="10"
         stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
@@ -54,7 +55,7 @@ def shortcut_svg(symbol: str) -> str:
         stroke-width="40" stroke-linecap="round"/>""",
     }
     return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="{INDIGO}"/>
+  <rect width="512" height="512" fill="{BRAND}"/>
   {symbols[symbol]}
 </svg>
 """

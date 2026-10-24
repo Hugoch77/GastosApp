@@ -220,7 +220,7 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
                 className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 font-semibold ${
                   speech.listening
                     ? 'animate-pulse bg-red-600 text-white'
-                    : 'bg-indigo-50 text-indigo-700 active:bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-300'
+                    : 'bg-brand-50 text-brand-700 active:bg-brand-100 dark:bg-brand-950 dark:text-brand-300'
                 }`}
                 data-testid="voice-button"
               >
@@ -352,7 +352,7 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
                 type="checkbox"
                 checked={isInstallments}
                 onChange={(e) => setIsInstallments(e.target.checked)}
-                className="size-6 accent-indigo-600"
+                className="size-6 accent-brand-600"
                 data-testid="installments-toggle"
               />
             </label>
@@ -371,7 +371,7 @@ function TransactionForm({ existing }: { existing?: Transaction }) {
                       onClick={() => setMonthsText(String(m))}
                       className={`rounded-full px-3 py-1.5 text-sm font-medium ${
                         months === m
-                          ? 'bg-indigo-600 text-white'
+                          ? 'bg-brand-700 text-white'
                           : 'bg-slate-200 dark:bg-slate-800'
                       }`}
                     >

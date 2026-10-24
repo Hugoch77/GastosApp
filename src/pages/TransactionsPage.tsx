@@ -148,7 +148,7 @@ export function TransactionsPage() {
 
         {isFiltering && (
           <div
-            className="flex items-center justify-between gap-2 rounded-xl bg-indigo-50 px-3 py-2 text-sm dark:bg-indigo-950/50"
+            className="flex items-center justify-between gap-2 rounded-xl bg-brand-50 px-3 py-2 text-sm dark:bg-brand-950/50"
             data-testid="filter-summary"
           >
             <span>
@@ -167,7 +167,7 @@ export function TransactionsPage() {
             <button
               type="button"
               onClick={() => updateParams({ q: '', categoria: '' })}
-              className="font-semibold text-indigo-700 dark:text-indigo-300"
+              className="font-semibold text-brand-700 dark:text-brand-300"
               data-testid="clear-filters"
             >
               Limpiar

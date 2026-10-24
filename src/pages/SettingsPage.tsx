@@ -44,7 +44,7 @@ function CardsSection() {
                 </span>
               </span>
               {card.id === data.settings.activeCardId && (
-                <span className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-semibold text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300">
+                <span className="rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-800 dark:bg-brand-900/50 dark:text-brand-300">
                   Seleccionada
                 </span>
               )}

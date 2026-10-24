@@ -33,7 +33,7 @@ export function TabLayout() {
 
       <Link
         to="/movimientos/nuevo"
-        className="fixed right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] flex size-14 items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg active:bg-indigo-700"
+        className="fixed right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] flex size-14 items-center justify-center rounded-full bg-brand-700 text-white shadow-lg active:bg-brand-800"
         aria-label="Agregar movimiento"
         data-testid="add-transaction"
       >
@@ -51,7 +51,7 @@ export function TabLayout() {
                 className={({ isActive }) =>
                   `flex flex-col items-center gap-0.5 py-2 text-xs font-medium ${
                     isActive
-                      ? 'text-indigo-600 dark:text-indigo-400'
+                      ? 'text-brand-700 dark:text-brand-400'
                       : 'text-slate-500 dark:text-slate-400'
                   }`
                 }

@@ -132,7 +132,7 @@ function HistoryChart({ history, selectedIndex, onSelect }: HistoryChartProps) {
               )}
               <span
                 className={`block w-6 rounded-t ${
-                  selected ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-600'
+                  selected ? 'bg-brand-600' : 'bg-slate-300 dark:bg-slate-600'
                 }`}
                 style={{ height: `${height * 100}%` }}
               />
@@ -206,7 +206,7 @@ function CategoryBreakdown({ spending, categories }: CategoryBreakdownProps) {
             </div>
             <span className="block h-2" aria-hidden="true">
               <span
-                className="block h-full min-w-1 rounded-r bg-indigo-500"
+                className="block h-full min-w-1 rounded-r bg-brand-600"
                 style={{ width: `${(cents / max) * 100}%` }}
               />
             </span>

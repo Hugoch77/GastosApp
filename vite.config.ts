@@ -27,7 +27,7 @@ export default defineConfig({
         display: 'standalone',
         orientation: 'portrait',
         background_color: '#f1f5f9',
-        theme_color: '#4f46e5',
+        theme_color: '#047857', // brand-700
         icons: [
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
           { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },

@@ -177,7 +177,7 @@ function CategoryForm({ existing }: { existing?: Category }) {
             aria-pressed={icon === option}
             className={`flex aspect-square items-center justify-center rounded-xl text-2xl ${
               icon === option
-                ? 'bg-indigo-100 ring-2 ring-indigo-500 dark:bg-indigo-950'
+                ? 'bg-brand-100 ring-2 ring-brand-500 dark:bg-brand-950'
                 : 'active:bg-slate-200 dark:active:bg-slate-800'
             }`}
             data-testid="icon-option"
