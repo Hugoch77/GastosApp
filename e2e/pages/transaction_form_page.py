@@ -10,6 +10,7 @@ class TransactionFormPage:
         self.description = page.locator("#description")
         self.date = page.locator("#date")
         self.months = page.locator("#months")
+        self.category = page.locator("#category")
         self.installments_toggle = page.get_by_test_id("installments-toggle")
         self.installments_preview = page.get_by_test_id("installments-preview")
         self.save_button = page.get_by_test_id("save-transaction")

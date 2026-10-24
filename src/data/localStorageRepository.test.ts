@@ -7,7 +7,14 @@ import {
 } from './localStorageRepository'
 import { NotFoundError } from './repository'
 import type { CardInput, TransactionInput } from './schema'
-import { activeCards, selectedCard, transactionsForCard } from './selectors'
+import {
+  activeCards,
+  activeCategories,
+  firstUnsavedChangeAt,
+  selectedCard,
+  transactionCountByCategory,
+  transactionsForCard,
+} from './selectors'
 import {
   createMemoryStorage,
   sampleAppData,
@@ -193,6 +200,66 @@ describe('movimientos', () => {
   })
 })
 
+describe('categorías', () => {
+  it('crear, editar y listar', async () => {
+    const created = await repo.createCategory({ name: 'Mascotas', icon: '🐶' })
+    expect(created).toMatchObject({
+      id: 'card-1',
+      name: 'Mascotas',
+      icon: '🐶',
+      deletedAt: null,
+    })
+
+    const updated = await repo.updateCategory(created.id, {
+      name: 'Perro',
+      icon: '🐕',
+    })
+    expect(updated.name).toBe('Perro')
+    expect(updated.updatedAt > created.updatedAt).toBe(true)
+    expect(activeCategories(await repo.getData()).map((c) => c.name)).toContain(
+      'Perro',
+    )
+  })
+
+  it.each([
+    ['nombre vacío', { name: '  ', icon: '🐶' }],
+    ['sin ícono', { name: 'Mascotas', icon: '' }],
+    ['nombre muy largo', { name: 'x'.repeat(31), icon: '🐶' }],
+  ])('valida la captura: %s', async (_, input) => {
+    await expect(repo.createCategory(input)).rejects.toThrow()
+  })
+
+  it('borrar: sus movimientos pasan a "Otros"', async () => {
+    const card = await repo.createCard(cardInput)
+    await repo.createTransaction(
+      txInput({ cardId: card.id, categoryId: 'fuel' }),
+    )
+    await repo.createTransaction(
+      txInput({ cardId: card.id, categoryId: 'food' }),
+    )
+
+    await repo.deleteCategory('fuel')
+    const data = await repo.getData()
+    expect(activeCategories(data).map((c) => c.id)).not.toContain('fuel')
+    expect(transactionsForCard(data, card.id).map((t) => t.categoryId)).toEqual(
+      expect.arrayContaining(['other', 'food']),
+    )
+    expect(transactionCountByCategory(data).get('fuel')).toBeUndefined()
+    expect(transactionCountByCategory(data).get('other')).toBe(1)
+  })
+
+  it('"Otros" no se puede borrar', async () => {
+    await expect(repo.deleteCategory('other')).rejects.toThrow(/Otros/)
+  })
+
+  it('editar o borrar una categoría inexistente falla', async () => {
+    await expect(
+      repo.updateCategory('nope', { name: 'X', icon: '❓' }),
+    ).rejects.toThrow(NotFoundError)
+    await expect(repo.deleteCategory('nope')).rejects.toThrow(NotFoundError)
+  })
+})
+
 describe('configuración', () => {
   it('actualiza solo los campos indicados', async () => {
     const settings = await repo.updateSettings({
@@ -201,6 +268,7 @@ describe('configuración', () => {
     expect(settings).toEqual({
       activeCardId: null,
       extraHolidays: ['2030-10-01'],
+      lastBackupAt: null,
     })
   })
 
@@ -220,7 +288,35 @@ describe('respaldo', () => {
     storage = createMemoryStorage()
     const other = newRepo()
     expect(await other.importBackup(json)).toMatchObject({ ok: true })
-    expect(await other.getData()).toEqual(await repo.getData())
+    const { settings: _, ...imported } = await other.getData()
+    const { settings: __, ...original } = await repo.getData()
+    expect(imported).toEqual(original)
+  })
+
+  it('exportar o importar registra la fecha del último respaldo', async () => {
+    await repo.createCard(cardInput)
+    expect((await repo.getData()).settings.lastBackupAt).toBeNull()
+
+    const json = await repo.exportBackup()
+    const exportedAt = (await repo.getData()).settings.lastBackupAt
+    expect(exportedAt).not.toBeNull()
+    // El archivo descargado ya incluye esa fecha.
+    expect(JSON.parse(json).settings.lastBackupAt).toBe(exportedAt)
+
+    await repo.importBackup(json)
+    const importedAt = (await repo.getData()).settings.lastBackupAt
+    expect(importedAt! > exportedAt!).toBe(true)
+  })
+
+  it('cambios sin respaldar: desde el último respaldo', async () => {
+    const card = await repo.createCard(cardInput)
+    expect(firstUnsavedChangeAt(await repo.getData())).not.toBeNull()
+
+    await repo.exportBackup()
+    expect(firstUnsavedChangeAt(await repo.getData())).toBeNull()
+
+    const tx = await repo.createTransaction(txInput({ cardId: card.id }))
+    expect(firstUnsavedChangeAt(await repo.getData())).toBe(tx.updatedAt)
   })
 
   it('importar reemplaza los datos actuales', async () => {

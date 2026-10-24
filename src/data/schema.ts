@@ -10,7 +10,7 @@ import { isValidIsoDate } from '../domain/dates'
 // Mensajes de error de Zod en español.
 z.config(z.locales.es())
 
-export const CURRENT_SCHEMA_VERSION = 2
+export const CURRENT_SCHEMA_VERSION = 3
 
 const id = z.string().min(1)
 const timestamp = z.iso.datetime()
@@ -35,7 +35,8 @@ export const CardSchema = z.object({
 export const CategorySchema = z.object({
   id,
   name: z.string().trim().min(1).max(30),
-  icon: z.string().max(8),
+  /** Un emoji; algunos ocupan varias unidades de texto (p. ej. con tono de piel). */
+  icon: z.string().trim().min(1).max(16),
   updatedAt: timestamp,
   deletedAt: timestamp.nullable(),
 })
@@ -74,6 +75,8 @@ export const TransactionSchema = TransactionFieldsSchema.refine(
 export const SettingsSchema = z.object({
   activeCardId: id.nullable(),
   extraHolidays: z.array(isoDate),
+  /** Cuándo se descargó o importó el último respaldo */
+  lastBackupAt: timestamp.nullable(),
 })
 
 export const AppDataSchema = z
@@ -138,6 +141,12 @@ export const CardInputSchema = CardSchema.pick({
   paymentBufferDays: true,
 })
 
+/** Lo que el usuario captura al crear o editar una categoría. */
+export const CategoryInputSchema = CategorySchema.pick({
+  name: true,
+  icon: true,
+})
+
 /** Lo que el usuario captura al crear o editar un movimiento. */
 export const TransactionInputSchema = TransactionFieldsSchema.pick({
   cardId: true,
@@ -155,4 +164,5 @@ export type Transaction = z.infer<typeof TransactionSchema>
 export type Settings = z.infer<typeof SettingsSchema>
 export type AppData = z.infer<typeof AppDataSchema>
 export type CardInput = z.infer<typeof CardInputSchema>
+export type CategoryInput = z.infer<typeof CategoryInputSchema>
 export type TransactionInput = z.infer<typeof TransactionInputSchema>

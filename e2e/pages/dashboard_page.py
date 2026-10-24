@@ -16,6 +16,8 @@ class DashboardPage:
         self.total_balance = page.get_by_test_id("total-balance-value")
         self.pending_installments = page.get_by_test_id("pending-installments-value")
         self.add_transaction_button = page.get_by_test_id("add-transaction")
+        self.backup_reminder = page.get_by_test_id("backup-reminder")
+        self.backup_reminder_download = page.get_by_test_id("backup-reminder-download")
 
     def open(self) -> None:
         self.page.goto("/")

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   formatDateWithYear,
   formatLongDate,
+  formatMonth,
+  formatMonthYear,
   formatRelativeDays,
   formatShortDate,
 } from './format'
@@ -12,6 +14,9 @@ describe('formatos de fecha', () => {
     expect(formatLongDate('2026-10-26')).toBe('lunes, 26 de octubre')
     expect(formatDateWithYear('2026-10-26')).toBe('26 oct 2026')
     expect(formatShortDate('2027-01-01')).toBe('vie 1 de ene')
+    expect(formatMonthYear('2026-11-25')).toBe('nov 2026')
+    expect(formatMonthYear('2027-01-01')).toBe('ene 2027')
+    expect(formatMonth('2026-09-30')).toBe('sep')
   })
 })
 

@@ -23,13 +23,17 @@ Tus datos se guardan solo en tu dispositivo.
 
 - **Panel**: pago para no generar intereses, fecha sugerida de pago con semáforo (_A tiempo_, _Paga pronto_, _Paga ya_, _Vencido_),
   próximo corte, gasto del periodo actual, saldo total y MSI por facturar.
-- **Movimientos** agrupados en _Periodo actual_, _Facturado_ y _Todos_: cargos, pagos y devoluciones.
-- **Meses sin intereses**: reparto exacto de las mensualidades por estado de cuenta, con vista previa al capturar.
+- **Movimientos** agrupados en _Periodo actual_, _Facturado_ y _Todos_: cargos, pagos y devoluciones, con
+  búsqueda (sin importar acentos) y filtro por categoría.
+- **Gráficas**: gasto de los últimos estados de cuenta y desglose por categoría de cada uno.
+- **Meses sin intereses**: reparto exacto de las mensualidades por estado de cuenta, con vista previa al capturar,
+  y una pantalla con las compras vigentes, lo que falta pagar y la proyección de los próximos meses.
+- **Categorías editables**: crear, renombrar, cambiar el ícono o eliminar (sus movimientos pasan a _Otros_).
 - **Varias tarjetas**, cada una con su día de corte, día límite de pago, días de anticipación para pagar y si
   lo comprado el día de corte entra en ese estado o en el siguiente (depende del banco).
 - **Días inhábiles bancarios** de México calculados automáticamente (incluida la Semana Santa), más días
   adicionales configurables.
-- **Respaldo**: exportar e importar todos los datos en JSON.
+- **Respaldo**: exportar e importar todos los datos en JSON, con un recordatorio cuando hay cambios sin respaldar.
 - **Importación desde Excel**: `tools/excel_to_json.py` convierte una hoja de compras en un respaldo listo
   para importar, incluyendo compras a MSI que siguen vigentes.
 - **PWA**: instalable, funciona sin conexión, tiene modo oscuro y avisa cuando hay una versión nueva.

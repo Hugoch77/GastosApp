@@ -6,16 +6,19 @@
  */
 import { nowTimestamp } from '../lib/today'
 import { parseBackup, serializeBackup } from './backup'
-import { emptyAppData } from './defaults'
+import { emptyAppData, OTHER_CATEGORY_ID } from './defaults'
 import { migrateToCurrent } from './migrations'
 import { NotFoundError, type GastosRepository } from './repository'
 import {
   AppDataSchema,
   CardInputSchema,
+  CategoryInputSchema,
   TransactionInputSchema,
   type AppData,
   type Card,
   type CardInput,
+  type Category,
+  type CategoryInput,
   type Settings,
   type Transaction,
   type TransactionInput,
@@ -174,6 +177,54 @@ export class LocalStorageRepository implements GastosRepository {
     })
   }
 
+  // ---------- categorías ----------
+
+  async createCategory(input: CategoryInput): Promise<Category> {
+    const fields = CategoryInputSchema.parse(input)
+    return this.mutate((data, now) => {
+      const category: Category = {
+        ...fields,
+        id: this.deps.newId(),
+        updatedAt: now,
+        deletedAt: null,
+      }
+      data.categories.push(category)
+      return category
+    })
+  }
+
+  async updateCategory(id: string, input: CategoryInput): Promise<Category> {
+    const fields = CategoryInputSchema.parse(input)
+    return this.mutate((data, now) => {
+      const index = findActiveIndex(data.categories, id, 'Categoría')
+      data.categories[index] = {
+        ...data.categories[index],
+        ...fields,
+        updatedAt: now,
+      }
+      return data.categories[index]
+    })
+  }
+
+  async deleteCategory(id: string): Promise<void> {
+    if (id === OTHER_CATEGORY_ID) {
+      throw new Error('La categoría "Otros" no se puede borrar')
+    }
+    this.mutate((data, now) => {
+      const index = findActiveIndex(data.categories, id, 'Categoría')
+      data.categories[index] = {
+        ...data.categories[index],
+        deletedAt: now,
+        updatedAt: now,
+      }
+      data.transactions = data.transactions.map((t) =>
+        t.categoryId === id
+          ? { ...t, categoryId: OTHER_CATEGORY_ID, updatedAt: now }
+          : t,
+      )
+    })
+  }
+
   // ---------- configuración ----------
 
   async updateSettings(patch: Partial<Settings>): Promise<Settings> {
@@ -186,12 +237,19 @@ export class LocalStorageRepository implements GastosRepository {
   // ---------- respaldo ----------
 
   async exportBackup(): Promise<string> {
-    return serializeBackup(this.read(), this.deps.now())
+    return this.mutate((data, now) => {
+      data.settings.lastBackupAt = now
+      return serializeBackup(data, now)
+    })
   }
 
   async importBackup(json: string) {
     const result = parseBackup(json)
-    if (result.ok) this.write(result.data)
+    if (result.ok) {
+      const now = this.deps.now()
+      result.data.settings.lastBackupAt = now
+      this.write(result.data)
+    }
     return result
   }
 

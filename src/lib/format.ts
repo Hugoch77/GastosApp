@@ -22,6 +22,11 @@ const numericFormatter = new Intl.DateTimeFormat('es-MX', {
   timeZone: 'UTC',
 })
 
+const monthFormatter = new Intl.DateTimeFormat('es-MX', {
+  month: 'short',
+  timeZone: 'UTC',
+})
+
 function toUtcDate(date: IsoDate): Date {
   const { year, month, day } = parseIsoDate(date)
   return new Date(Date.UTC(year, month - 1, day))
@@ -40,6 +45,16 @@ export function formatLongDate(date: IsoDate): string {
 /** "26 oct 2026" */
 export function formatDateWithYear(date: IsoDate): string {
   return numericFormatter.format(toUtcDate(date))
+}
+
+/** "nov" */
+export function formatMonth(date: IsoDate): string {
+  return monthFormatter.format(toUtcDate(date)).replace('.', '')
+}
+
+/** "nov 2026" (el año se arma aparte para no depender del "de" de cada navegador) */
+export function formatMonthYear(date: IsoDate): string {
+  return `${formatMonth(date)} ${parseIsoDate(date).year}`
 }
 
 /** 0 → "hoy", 1 → "mañana", 5 → "en 5 días", -2 → "hace 2 días" */

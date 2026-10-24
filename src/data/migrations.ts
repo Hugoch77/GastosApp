@@ -24,12 +24,22 @@ export const MIGRATIONS: Record<number, Migration> = {
       cutDayInNextPeriod: false,
     })),
   }),
+  // v3: fecha del último respaldo (desconocida para datos anteriores).
+  2: (data) => ({
+    ...data,
+    schemaVersion: 3,
+    settings: { ...asRecord(data.settings), lastBackupAt: null },
+  }),
 }
 
 export class SchemaVersionError extends Error {}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return isRecord(value) ? value : {}
 }
 
 /** Para migraciones: los datos aún no están validados, puede no ser un arreglo. */

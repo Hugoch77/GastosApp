@@ -55,6 +55,17 @@ function entryFor<T extends Transaction>(
     : null
 }
 
+/** Suma con signo de los renglones: cargos suman; pagos y devoluciones restan. */
+export function entriesNetCents(entries: StatementEntry[]): number {
+  return entries.reduce(
+    (sum, e) =>
+      e.transaction.type === 'charge'
+        ? sum + e.amountCents
+        : sum - e.amountCents,
+    0,
+  )
+}
+
 /**
  * Renglones del estado `statement`, del más reciente al más antiguo.
  * Es genérica para que la UI reciba de vuelta su propio tipo de movimiento completo.

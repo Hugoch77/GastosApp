@@ -185,7 +185,7 @@ class TestBuildBackup:
 
     def test_backup_shape(self):
         data = build([row("Compra", date(2026, 10, 1), 100, months=3)]).data
-        assert data["schemaVersion"] == 2
+        assert data["schemaVersion"] == 3
         card = data["cards"][0]
         assert card == {
             "id": "id-1",
@@ -198,7 +198,7 @@ class TestBuildBackup:
             "updatedAt": "2026-10-23T18:00:00.000Z",
             "deletedAt": None,
         }
-        assert data["settings"] == {"activeCardId": "id-1", "extraHolidays": []}
+        assert data["settings"] == {"activeCardId": "id-1", "extraHolidays": [], "lastBackupAt": None}
         assert len(data["categories"]) == 13
         tx = data["transactions"][0]
         assert tx["installments"] == {"months": 3}

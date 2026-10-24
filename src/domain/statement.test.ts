@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { CutSchedule } from './billing'
-import { statementEntries } from './statement'
+import { entriesNetCents, statementEntries } from './statement'
 import type { Transaction, TransactionType } from './types'
 
 function tx(
@@ -62,6 +62,12 @@ describe('statementEntries', () => {
       ['cash-current', 15000, null],
       ['msi', 30000, { number: 2, months: 3 }],
     ])
+  })
+
+  it('entriesNetCents: cargos suman, pagos y devoluciones restan', () => {
+    const entries = statementEntries(transactions, billed, CUT_15)
+    // 200 + 300 (MSI) + 500 − 100 (devolución) − 750 (pago)
+    expect(entriesNetCents(entries)).toBe(15000)
   })
 
   it('una compra a MSI ya liquidada no aparece', () => {

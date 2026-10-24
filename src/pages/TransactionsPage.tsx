@@ -5,9 +5,14 @@ import { PageHeader } from '../components/PageHeader'
 import { SegmentedControl } from '../components/SegmentedControl'
 import { ui } from '../components/styles'
 import type { Category, Transaction } from '../data/schema'
-import { transactionsForCard } from '../data/selectors'
+import { activeCategories, transactionsForCard } from '../data/selectors'
 import { getBillingCycle, type Statement } from '../domain/billing'
-import { statementEntries, type StatementEntry } from '../domain/statement'
+import { matchesQuery } from '../domain/search'
+import {
+  entriesNetCents,
+  statementEntries,
+  type StatementEntry,
+} from '../domain/statement'
 import { statementTotalCents } from '../domain/summary'
 import { useSelectedCard } from '../hooks/useSelectedCard'
 import { useToday } from '../hooks/useToday'
@@ -32,9 +37,22 @@ export function TransactionsPage() {
   const today = useToday()
   const { data } = useGastos()
   const { card, config } = useSelectedCard()
-  // La vista elegida vive en la URL (?vista=facturado) para conservarla al regresar.
+  // Vista y filtros viven en la URL (?vista=facturado&q=rappi&categoria=food)
+  // para conservarlos al abrir un movimiento y regresar.
   const [searchParams, setSearchParams] = useSearchParams()
   const view = parseView(searchParams.get('vista'))
+  const query = searchParams.get('q') ?? ''
+  const categoryFilter = searchParams.get('categoria') ?? ''
+  const isFiltering = query.trim() !== '' || categoryFilter !== ''
+
+  function updateParams(changes: Record<string, string>) {
+    const next = new URLSearchParams(searchParams)
+    for (const [key, value] of Object.entries(changes)) {
+      if (value) next.set(key, value)
+      else next.delete(key)
+    }
+    setSearchParams(next, { replace: true })
+  }
 
   const transactions = transactionsForCard(data, card.id)
   const cycle = getBillingCycle(today, config)
@@ -45,13 +63,18 @@ export function TransactionsPage() {
         ? cycle.billed
         : null
 
-  const entries: StatementEntry<Transaction>[] = statement
+  const periodEntries: StatementEntry<Transaction>[] = statement
     ? statementEntries(transactions, statement, config)
     : transactions.map((t) => ({
         transaction: t,
         amountCents: t.amountCents,
         installment: null,
       }))
+  const entries = periodEntries.filter(
+    ({ transaction: t }) =>
+      matchesQuery(t.description, query) &&
+      (categoryFilter === '' || t.categoryId === categoryFilter),
+  )
 
   const categories = new Map(data.categories.map((c) => [c.id, c]))
 
@@ -63,11 +86,36 @@ export function TransactionsPage() {
           label="Periodo"
           options={VIEW_OPTIONS}
           value={view}
-          onChange={(value) =>
-            setSearchParams({ vista: value }, { replace: true })
-          }
+          onChange={(value) => updateParams({ vista: value })}
           testId="period-view"
         />
+
+        {/* Cuadrícula: ui.input trae w-full, así cada campo llena su columna. */}
+        <div className="grid grid-cols-[1fr_9rem] gap-2">
+          <input
+            type="search"
+            aria-label="Buscar movimientos"
+            placeholder="Buscar…"
+            value={query}
+            onChange={(e) => updateParams({ q: e.target.value })}
+            className={ui.input}
+            data-testid="search-input"
+          />
+          <select
+            aria-label="Filtrar por categoría"
+            value={categoryFilter}
+            onChange={(e) => updateParams({ categoria: e.target.value })}
+            className={ui.input}
+            data-testid="category-filter"
+          >
+            <option value="">Todas</option>
+            {activeCategories(data).map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.icon} {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
 
         {statement && (
           <div className="flex items-baseline justify-between px-1">
@@ -86,13 +134,43 @@ export function TransactionsPage() {
           </div>
         )}
 
+        {isFiltering && (
+          <div
+            className="flex items-center justify-between gap-2 rounded-xl bg-indigo-50 px-3 py-2 text-sm dark:bg-indigo-950/50"
+            data-testid="filter-summary"
+          >
+            <span>
+              <span data-testid="filter-count">
+                {entries.length === 1
+                  ? '1 resultado'
+                  : `${entries.length} resultados`}
+              </span>
+              {' · '}
+              <Money
+                cents={entriesNetCents(entries)}
+                className="font-semibold"
+                testId="filter-total"
+              />
+            </span>
+            <button
+              type="button"
+              onClick={() => updateParams({ q: '', categoria: '' })}
+              className="font-semibold text-indigo-700 dark:text-indigo-300"
+              data-testid="clear-filters"
+            >
+              Limpiar
+            </button>
+          </div>
+        )}
+
         {entries.length === 0 ? (
           <p
             className={`${ui.card} text-center ${ui.muted}`}
             data-testid="empty-list"
           >
-            No hay movimientos{' '}
-            {view === 'todos' ? 'registrados' : 'en este periodo'}.
+            {isFiltering
+              ? 'Ningún movimiento coincide con la búsqueda.'
+              : `No hay movimientos ${view === 'todos' ? 'registrados' : 'en este periodo'}.`}
           </p>
         ) : (
           <ul className={ui.list}>

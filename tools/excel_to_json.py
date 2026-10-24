@@ -35,7 +35,7 @@ from pathlib import Path
 from openpyxl import load_workbook
 
 SHEET_NAME = "Datos compra"
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 # México no tiene horario de verano desde 2022: la Ciudad de México es UTC-6 todo el año.
 MEXICO_CITY = timezone(timedelta(hours=-6))
 DATE_IN_DETAIL = re.compile(r"\s*(\d{1,2})/(\d{1,2})/(\d{2}|\d{4})\s*$")
@@ -366,7 +366,7 @@ def build_backup(
 
     data = {
         "schemaVersion": SCHEMA_VERSION,
-        "settings": {"activeCardId": card_id, "extraHolidays": []},
+        "settings": {"activeCardId": card_id, "extraHolidays": [], "lastBackupAt": None},
         "cards": [{
             "id": card_id,
             "name": card_name,

@@ -9,6 +9,8 @@ import type {
   AppData,
   Card,
   CardInput,
+  Category,
+  CategoryInput,
   Settings,
   Transaction,
   TransactionInput,
@@ -27,11 +29,19 @@ export interface GastosRepository {
   updateTransaction(id: string, input: TransactionInput): Promise<Transaction>
   deleteTransaction(id: string): Promise<void>
 
+  createCategory(input: CategoryInput): Promise<Category>
+  updateCategory(id: string, input: CategoryInput): Promise<Category>
+  /** Borrado lógico; sus movimientos pasan a "Otros", que no se puede borrar. */
+  deleteCategory(id: string): Promise<void>
+
   updateSettings(patch: Partial<Settings>): Promise<Settings>
 
-  /** JSON listo para descargar como respaldo. */
+  /** JSON listo para descargar como respaldo; registra la fecha del respaldo. */
   exportBackup(): Promise<string>
-  /** Reemplaza todos los datos. Si el respaldo es inválido no modifica nada. */
+  /**
+   * Reemplaza todos los datos. Si el respaldo es inválido no modifica nada.
+   * El archivo importado cuenta como respaldo.
+   */
   importBackup(json: string): Promise<ParseBackupResult>
 
   /** Borra todos los datos (la app vuelve al estado inicial). */

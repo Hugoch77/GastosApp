@@ -3,11 +3,9 @@ import { Link } from 'react-router'
 import { BackupImport } from '../components/BackupImport'
 import { PageHeader } from '../components/PageHeader'
 import { ui } from '../components/styles'
-import { backupFileName } from '../data/backup'
-import { activeCards } from '../data/selectors'
+import { activeCards, activeCategories } from '../data/selectors'
 import { isValidIsoDate } from '../domain/dates'
-import { useToday } from '../hooks/useToday'
-import { downloadTextFile } from '../lib/download'
+import { useBackupStatus, useExportBackup } from '../hooks/useBackup'
 import { formatDateWithYear } from '../lib/format'
 import { useGastos } from '../state/gastosContext'
 
@@ -17,6 +15,7 @@ export function SettingsPage() {
       <PageHeader title="Ajustes" />
       <main className="space-y-8 px-4">
         <CardsSection />
+        <CategoriesSection />
         <BackupSection />
         <HolidaysSection />
       </main>
@@ -64,14 +63,39 @@ function CardsSection() {
   )
 }
 
-function BackupSection() {
-  const today = useToday()
-  const { mutate } = useGastos()
+function CategoriesSection() {
+  const { data } = useGastos()
+  const categories = activeCategories(data)
 
-  async function handleExport() {
-    const json = await mutate((repo) => repo.exportBackup())
-    downloadTextFile(backupFileName(today), json)
-  }
+  return (
+    <section className="space-y-3">
+      <h2 className={ui.sectionTitle}>Categorías</h2>
+      <Link
+        to="/categorias"
+        className={`${ui.card} flex items-center justify-between gap-3 active:bg-slate-100 dark:active:bg-slate-800`}
+        data-testid="manage-categories"
+      >
+        <span>
+          <span className="block font-medium">Administrar categorías</span>
+          <span className={ui.muted}>
+            {categories
+              .slice(0, 6)
+              .map((c) => c.icon)
+              .join(' ')}{' '}
+            · {categories.length} categorías
+          </span>
+        </span>
+        <span aria-hidden="true" className={ui.muted}>
+          ›
+        </span>
+      </Link>
+    </section>
+  )
+}
+
+function BackupSection() {
+  const exportBackup = useExportBackup()
+  const { lastBackupDate } = useBackupStatus()
 
   return (
     <section className="space-y-3">
@@ -80,10 +104,15 @@ function BackupSection() {
         Tus datos solo se guardan en este dispositivo. Descarga un respaldo de
         vez en cuando o úsalo para pasar tus datos a otro dispositivo.
       </p>
+      <p className={ui.muted} data-testid="last-backup">
+        {lastBackupDate
+          ? `Último respaldo: ${formatDateWithYear(lastBackupDate)}`
+          : 'Aún no has descargado un respaldo.'}
+      </p>
       <button
         type="button"
         className={ui.buttonPrimary}
-        onClick={() => void handleExport()}
+        onClick={() => void exportBackup()}
         data-testid="export-backup"
       >
         Descargar respaldo

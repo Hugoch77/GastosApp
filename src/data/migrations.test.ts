@@ -71,15 +71,34 @@ describe('migrateToCurrent', () => {
     expect(migrateToCurrent(structuredClone(data))).toEqual(data)
   })
 
-  it('v1 → v2: las tarjetas existentes conservan la regla del día de corte', () => {
-    // Respaldo real de v1: las tarjetas aún no tenían `cutDayInNextPeriod`.
+  it('v1 → actual: las tarjetas conservan la regla del día de corte y no hay respaldo previo', () => {
+    // Respaldo real de v1: sin `cutDayInNextPeriod` ni `lastBackupAt`.
     const current = sampleAppData()
     const v1Card: Record<string, unknown> = { ...current.cards[0] }
     delete v1Card.cutDayInNextPeriod
-    const v1 = { ...current, schemaVersion: 1, cards: [v1Card] }
+    const v1 = {
+      ...current,
+      schemaVersion: 1,
+      settings: { activeCardId: 'card-1', extraHolidays: [] },
+      cards: [v1Card],
+    }
     const migrated = migrateToCurrent(v1)
-    expect(migrated.schemaVersion).toBe(2)
     expect(migrated.cards.map((c) => c.cutDayInNextPeriod)).toEqual([false])
+    expect(migrated.settings.lastBackupAt).toBeNull()
     expect(migrated).toEqual(current)
+  })
+
+  it('v2 → v3: agrega lastBackupAt vacío', () => {
+    const current = sampleAppData()
+    const v2 = {
+      ...current,
+      schemaVersion: 2,
+      settings: { activeCardId: 'card-1', extraHolidays: ['2030-10-01'] },
+    }
+    expect(migrateToCurrent(v2).settings).toEqual({
+      activeCardId: 'card-1',
+      extraHolidays: ['2030-10-01'],
+      lastBackupAt: null,
+    })
   })
 })

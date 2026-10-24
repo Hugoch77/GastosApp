@@ -34,7 +34,7 @@ def test_export_and_import_on_another_device(page: Page, set_today, tmp_path: Pa
     settings.open()
     backup = settings.export_backup(tmp_path)
     assert backup.name == "gastosapp-respaldo-2026-10-23.json"
-    assert json.loads(backup.read_text(encoding="utf-8"))["schemaVersion"] == 2
+    assert json.loads(backup.read_text(encoding="utf-8"))["schemaVersion"] == 3
 
     # "Otro dispositivo": sin datos, se importa desde la pantalla de bienvenida.
     page.evaluate("localStorage.clear()")
@@ -64,3 +64,35 @@ def test_invalid_backup_is_rejected_without_touching_data(
     expect(settings.import_message).to_contain_text("datos inválidos")
     page.get_by_test_id("nav-dashboard").click()
     expect(DashboardPage(page).title).to_have_text("Azul")
+
+
+def test_backup_reminder(page: Page, set_today):
+    set_today("2026-10-01")
+    page.goto("/")
+    create_card(page)
+    dashboard = DashboardPage(page)
+    expect(dashboard.backup_reminder).to_have_count(0)
+
+    # 14 días con cambios sin respaldar.
+    set_today("2026-10-15")
+    expect(dashboard.backup_reminder).to_contain_text("Aún no has descargado")
+    with page.expect_download():
+        dashboard.backup_reminder_download.click()
+    expect(dashboard.backup_reminder).to_have_count(0)
+
+    settings = SettingsPage(page)
+    settings.open()
+    expect(settings.last_backup).to_have_text("Último respaldo: 15 oct 2026")
+
+    # Sin cambios nuevos no hay nada que recordar, aunque pase el tiempo.
+    set_today("2026-11-20")
+    page.get_by_test_id("nav-dashboard").click()
+    expect(dashboard.backup_reminder).to_have_count(0)
+
+    # Con un cambio nuevo el aviso vuelve: ya pasaron más de 14 días del respaldo.
+    page.get_by_test_id("nav-settings").click()
+    page.get_by_test_id("card-row").click()
+    page.locator("#card-name").fill("Azul Oro")
+    page.get_by_test_id("save-card").click()
+    page.get_by_test_id("nav-dashboard").click()
+    expect(dashboard.backup_reminder).to_contain_text("hace 36 días")

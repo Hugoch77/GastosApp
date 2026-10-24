@@ -85,8 +85,8 @@ export function cutDateInMonth(
   return clampedDate(year, month, cutDay)
 }
 
-/** Fecha de corte del mes desplazado `months` meses respecto al mes de `date`. */
-function cutDateRelativeTo(
+/** Fecha de corte del mes desplazado `months` meses respecto al mes de `date` (p. ej. el corte anterior). */
+export function cutDateRelativeTo(
   date: IsoDate,
   cutDay: number,
   months: number,

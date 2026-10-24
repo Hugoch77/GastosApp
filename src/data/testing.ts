@@ -80,7 +80,7 @@ export function sampleTransaction(
 export function sampleAppData(overrides: Partial<AppData> = {}): AppData {
   return {
     ...emptyAppData(T0),
-    settings: { activeCardId: 'card-1', extraHolidays: [] },
+    settings: { activeCardId: 'card-1', extraHolidays: [], lastBackupAt: null },
     cards: [sampleCard()],
     transactions: [sampleTransaction()],
     ...overrides,

@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet } from 'react-router'
-import { HomeIcon, ListIcon, PlusIcon, SettingsIcon } from './Icons'
+import { ChartIcon, HomeIcon, ListIcon, PlusIcon, SettingsIcon } from './Icons'
 
 const TABS = [
   { to: '/', label: 'Panel', icon: HomeIcon, testId: 'nav-dashboard' },
@@ -8,6 +8,12 @@ const TABS = [
     label: 'Movimientos',
     icon: ListIcon,
     testId: 'nav-transactions',
+  },
+  {
+    to: '/graficas',
+    label: 'Gráficas',
+    icon: ChartIcon,
+    testId: 'nav-insights',
   },
   {
     to: '/ajustes',

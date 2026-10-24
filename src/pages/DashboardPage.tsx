@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
+import { BackupReminder } from '../components/BackupReminder'
 import { CardSwitcher } from '../components/CardSwitcher'
 import { AlertIcon, CheckIcon } from '../components/Icons'
 import { Money } from '../components/Money'
@@ -35,6 +36,7 @@ export function DashboardPage() {
     <>
       <PageHeader title={card.name} right={<CardSwitcher />} />
       <main className="space-y-4 px-4">
+        <BackupReminder />
         {summary.paymentStatus === 'paid' ? (
           <UpToDateHero summary={summary} />
         ) : (
@@ -66,7 +68,8 @@ export function DashboardPage() {
             label="MSI por facturar"
             testId="pending-installments"
             value={<Money cents={summary.pendingInstallmentsCents} />}
-            detail="Después del próximo corte"
+            detail="Ver compras a meses ›"
+            to="/msi"
           />
         </div>
 
@@ -197,11 +200,13 @@ interface TileProps {
   value: ReactNode
   detail: string
   testId: string
+  /** Si se indica, el mosaico es un enlace a esa ruta. */
+  to?: string
 }
 
-function Tile({ label, value, detail, testId }: TileProps) {
-  return (
-    <div className={`${ui.card} space-y-1`} data-testid={testId}>
+function Tile({ label, value, detail, testId, to }: TileProps) {
+  const content = (
+    <>
       <p className={ui.muted}>{label}</p>
       <p className="text-lg font-semibold" data-testid={`${testId}-value`}>
         {value}
@@ -212,6 +217,21 @@ function Tile({ label, value, detail, testId }: TileProps) {
       >
         {detail}
       </p>
+    </>
+  )
+
+  const className = `${ui.card} block space-y-1`
+  return to ? (
+    <Link
+      to={to}
+      className={`${className} active:bg-slate-100 dark:active:bg-slate-800`}
+      data-testid={testId}
+    >
+      {content}
+    </Link>
+  ) : (
+    <div className={className} data-testid={testId}>
+      {content}
     </div>
   )
 }
