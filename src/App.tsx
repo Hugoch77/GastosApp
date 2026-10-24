@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router'
 import { TabLayout } from './components/TabLayout'
 import { activeCards } from './data/selectors'
 import { CardFormPage } from './pages/CardFormPage'
+import { CardsOverviewPage } from './pages/CardsOverviewPage'
 import { CategoriesPage } from './pages/CategoriesPage'
 import { CategoryFormPage } from './pages/CategoryFormPage'
 import { DashboardPage } from './pages/DashboardPage'
@@ -36,6 +37,7 @@ function App() {
         {/* Formularios a pantalla completa */}
         <Route path="movimientos/nuevo" element={<TransactionFormPage />} />
         <Route path="movimientos/:id" element={<TransactionFormPage />} />
+        <Route path="tarjetas" element={<CardsOverviewPage />} />
         <Route path="tarjetas/nueva" element={<CardFormPage />} />
         <Route path="tarjetas/:id" element={<CardFormPage />} />
         <Route path="msi" element={<InstallmentsPage />} />

@@ -4,7 +4,7 @@ El reconocimiento de voz real no se puede usar en CI: se reemplaza por uno falso
 que "escucha" la frase indicada.
 """
 
-from urllib.parse import quote
+from urllib.parse import quote, quote_plus
 
 from playwright.sync_api import Page, expect
 
@@ -55,6 +55,21 @@ def test_text_in_link_prefills_the_form(page: Page, set_today):
     transactions = TransactionsPage(page)
     expect(transactions.rows.first).to_contain_text("Rappi")
     expect(transactions.rows.first).to_contain_text("Comida")
+
+
+def test_text_in_link_accepts_form_encoding(page: Page, set_today):
+    """Automate (`urlEncode`) manda los espacios como "+"; también deben entenderse."""
+    set_today("2026-10-23")
+    page.goto("/")
+    create_card(page)
+
+    page.goto(f"/#/movimientos/nuevo?texto={quote_plus('Café 85 con 50 ayer')}")
+    form = TransactionFormPage(page)
+    expect(page.get_by_test_id("voice-transcript")).to_contain_text("Café 85 con 50 ayer")
+    expect(form.amount).to_have_value("85.50")
+    expect(form.description).to_have_value("Café")
+    expect(form.date).to_have_value("2026-10-22")
+    expect(form.category).to_have_value("food")
 
 
 def test_voice_button_fills_installment_purchase(page: Page, set_today):

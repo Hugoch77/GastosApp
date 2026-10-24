@@ -5,13 +5,10 @@ import { CardSwitcher } from '../components/CardSwitcher'
 import { AlertIcon, CheckIcon } from '../components/Icons'
 import { Money } from '../components/Money'
 import { PageHeader } from '../components/PageHeader'
+import { PaymentStatusBadge } from '../components/PaymentStatusBadge'
 import { ui } from '../components/styles'
-import { transactionsForCard } from '../data/selectors'
-import {
-  getDashboardSummary,
-  type DashboardSummary,
-  type PaymentStatus,
-} from '../domain/summary'
+import { activeCards, transactionsForCard } from '../data/selectors'
+import { getDashboardSummary, type DashboardSummary } from '../domain/summary'
 import { useSelectedCard } from '../hooks/useSelectedCard'
 import { useToday } from '../hooks/useToday'
 import {
@@ -76,48 +73,29 @@ export function DashboardPage() {
         <Link to="/movimientos" className={ui.buttonSecondary}>
           Ver movimientos
         </Link>
+        {activeCards(data).length > 1 && (
+          <Link
+            to="/tarjetas"
+            className={ui.buttonSecondary}
+            data-testid="all-cards-link"
+          >
+            Ver todas las tarjetas
+          </Link>
+        )}
       </main>
     </>
   )
 }
 
-const STATUS_BADGE: Record<
-  Exclude<PaymentStatus, 'paid'>,
-  { label: string; className: string }
-> = {
-  'on-track': {
-    label: 'A tiempo',
-    className:
-      'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300',
-  },
-  'due-soon': {
-    label: 'Paga pronto',
-    className:
-      'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300',
-  },
-  'past-suggested': {
-    label: 'Paga ya',
-    className: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
-  },
-  overdue: { label: 'Vencido', className: 'bg-red-600 text-white' },
-}
-
 function PaymentDueHero({ summary }: { summary: DashboardSummary }) {
   const { billed } = summary.cycle
-  const status = summary.paymentStatus as Exclude<PaymentStatus, 'paid'>
-  const badge = STATUS_BADGE[status]
+  const status = summary.paymentStatus
 
   return (
     <section className={`${ui.card} space-y-3`} data-testid="payment-hero">
       <div className="flex items-start justify-between gap-2">
         <h2 className={ui.muted}>Pago para no generar intereses</h2>
-        <span
-          className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${badge.className}`}
-          data-testid="payment-status"
-          data-status={status}
-        >
-          {badge.label}
-        </span>
+        <PaymentStatusBadge status={status} testId="payment-status" />
       </div>
 
       <Money

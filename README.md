@@ -31,6 +31,8 @@ Tus datos se guardan solo en tu dispositivo.
 - **Categorías editables**: crear, renombrar, cambiar el ícono o eliminar (sus movimientos pasan a _Otros_).
 - **Varias tarjetas**, cada una con su día de corte, día límite de pago, días de anticipación para pagar y si
   lo comprado el día de corte entra en ese estado o en el siguiente (depende del banco).
+- **Todas las tarjetas**: con más de una, una pantalla junta lo que hay que pagar en cada tarjeta (lo más
+  urgente arriba) y los totales.
 - **Días inhábiles bancarios** de México calculados automáticamente (incluida la Semana Santa), más días
   adicionales configurables.
 - **Respaldo**: exportar e importar todos los datos en JSON, con un recordatorio cuando hay cambios sin respaldar.
@@ -111,13 +113,17 @@ npm run dev          # http://localhost:5173
 ### Gasto por voz sin tocar la pantalla (Android, opcional)
 
 Con [Automate](https://play.google.com/store/apps/details?id=com.llamalab.automate) (gratis) se puede crear
-un flujo de dos bloques:
+un flujo de tres bloques:
 
-1. **Speech recognition**: guarda lo que dictes en una variable, p. ej. `texto`.
-2. **Browse URL** (o _App start_ con la acción VIEW):
-   `https://hugoch77.github.io/GastosApp/#/movimientos/nuevo?texto={urlEncode(texto)}`
+1. **Flow beginning**: el inicio del flujo.
+2. **Speech recognition**: _Language_ `es-MX`; en _Spoken texts_ escribe una variable, p. ej. `texto`.
+   Es una lista con las posibles interpretaciones; la primera es la más probable.
+3. **Content view**: en _URI_ escribe la expresión
+   `"https://hugoch77.github.io/GastosApp/#/movimientos/nuevo?texto=" ++ urlEncode(texto[0])`
 
-Se inicia con un widget o un acceso directo de Automate y abre el formulario ya lleno.
+Conecta los bloques en ese orden. Se inicia con un widget o un acceso directo de Automate: dictas y se abre
+el formulario ya lleno (si la app está instalada, Android la abre en lugar del navegador). Los espacios
+llegan como `+` (así codifica `urlEncode`) y la app los entiende.
 
 ### Importar desde Excel
 
