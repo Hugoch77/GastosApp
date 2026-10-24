@@ -68,7 +68,7 @@ export function DashboardPage() {
             label="MSI por facturar"
             testId="pending-installments"
             value={<Money cents={summary.pendingInstallmentsCents} />}
-            detail="Ver compras a meses ›"
+            detail="Después del próximo corte ›"
             to="/msi"
           />
         </div>

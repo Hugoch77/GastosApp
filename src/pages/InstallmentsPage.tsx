@@ -10,6 +10,7 @@ import {
   installmentProjection,
   type InstallmentPlan,
 } from '../domain/installmentPlans'
+import { pendingInstallmentsCents } from '../domain/summary'
 import { useSelectedCard } from '../hooks/useSelectedCard'
 import { useToday } from '../hooks/useToday'
 import { formatMonthYear } from '../lib/format'
@@ -34,6 +35,12 @@ export function InstallmentsPage() {
     config,
   )
   const remainingCents = plans.reduce((sum, p) => sum + p.remainingCents, 0)
+  // Mismo cálculo que "MSI por facturar" en el panel: así ambos números coinciden.
+  const afterCurrentCutCents = pendingInstallmentsCents(
+    transactions,
+    currentCut,
+    config,
+  )
   const maxMonthCents = Math.max(...projection.map((p) => p.amountCents))
   const categories = new Map(data.categories.map((c) => [c.id, c]))
 
@@ -69,13 +76,14 @@ export function InstallmentsPage() {
                   />
                 </p>
                 <p>
-                  <span className={`${ui.muted} block`}>Compras vigentes</span>
-                  <span
-                    className="font-semibold"
-                    data-testid="msi-active-count"
-                  >
-                    {plans.length}
+                  <span className={`${ui.muted} block`}>
+                    Después del próximo corte
                   </span>
+                  <Money
+                    cents={afterCurrentCutCents}
+                    className="font-semibold"
+                    testId="msi-after-current-cut"
+                  />
                 </p>
               </div>
             </section>
@@ -109,7 +117,10 @@ export function InstallmentsPage() {
             </section>
 
             <section className="space-y-3">
-              <h2 className={ui.sectionTitle}>Compras vigentes</h2>
+              <h2 className={ui.sectionTitle}>
+                Compras vigentes (
+                <span data-testid="msi-active-count">{plans.length}</span>)
+              </h2>
               <ul className={ui.list}>
                 {plans.map((plan) => (
                   <PlanRow

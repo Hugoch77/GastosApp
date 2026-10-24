@@ -8,6 +8,7 @@ class InstallmentsPage:
         self.page = page
         self.remaining_total = page.get_by_test_id("msi-remaining-total")
         self.current_period = page.get_by_test_id("msi-current-period")
+        self.after_current_cut = page.get_by_test_id("msi-after-current-cut")
         self.active_count = page.get_by_test_id("msi-active-count")
         self.projection_rows = page.get_by_test_id("msi-projection-row")
         self.plans = page.get_by_test_id("msi-plan")

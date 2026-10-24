@@ -2,6 +2,7 @@
 
 from playwright.sync_api import Page, expect
 
+from pages.dashboard_page import DashboardPage
 from pages.flows import add_transaction, create_card
 from pages.installments_page import InstallmentsPage
 
@@ -15,12 +16,17 @@ def test_active_installments_and_projection(page: Page, set_today):
     add_transaction(page, amount="1200", description="Celular", date="2026-09-20", months=12)
     add_transaction(page, amount="500", description="Súper", date="2026-10-18")
 
+    # En el panel, "MSI por facturar" solo cuenta lo posterior al próximo corte.
+    expect(DashboardPage(page).pending_installments).to_have_text("$2,000.00")
+
     msi = InstallmentsPage(page)
     msi.open_from_dashboard()
 
     # Pantalla: 2 de 3 pendientes ($2,000); Celular: 11 de 12 ($1,100).
+    # Total = este periodo + después del próximo corte (el mismo número del panel).
     expect(msi.remaining_total).to_have_text("$3,100.00")
     expect(msi.current_period).to_have_text("$1,100.00")
+    expect(msi.after_current_cut).to_have_text("$2,000.00")
     expect(msi.active_count).to_have_text("2")
     # La que termina primero va arriba.
     expect(msi.plan_descriptions).to_have_text(["Pantalla", "Celular"])
