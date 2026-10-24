@@ -5,6 +5,7 @@
  * implementación contra una API (FastAPI) encaja sin cambiar la UI.
  */
 import type { ParseBackupResult } from './backup'
+import type { SyncChanges } from './sync'
 import type {
   AppData,
   Card,
@@ -46,6 +47,13 @@ export interface GastosRepository {
 
   /** Borra todos los datos (la app vuelve al estado inicial). */
   clearAll(): Promise<void>
+
+  // ---------- sincronización (ver sync.ts) ----------
+
+  /** Aplica lo recibido del servidor; gana el cambio más reciente. */
+  applyRemoteChanges(remote: SyncChanges): Promise<void>
+  /** Antes de la primera sincronización: categorías por defecto sin tocar → fecha 1970. */
+  resetUntouchedDefaultCategories(): Promise<void>
 }
 
 export class NotFoundError extends Error {}

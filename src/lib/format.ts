@@ -1,5 +1,6 @@
 /** Formatos de fecha para la UI (es-MX). No lee el reloj: recibe fechas IsoDate. */
 import { parseIsoDate, type IsoDate } from '../domain/dates'
+import { APP_TIME_ZONE, todayInMexico } from './today'
 
 // Se formatea en UTC porque la fecha se construye con Date.UTC: así nunca se
 // recorre un día por la zona horaria del dispositivo.
@@ -63,4 +64,20 @@ export function formatRelativeDays(days: number): string {
   if (days === 1) return 'mañana'
   if (days === -1) return 'ayer'
   return days > 0 ? `en ${days} días` : `hace ${-days} días`
+}
+
+// Los instantes (createdAt, lastSyncAt...) se guardan en UTC; se muestran en hora de la CDMX.
+const timeFormatter = new Intl.DateTimeFormat('es-MX', {
+  hour: 'numeric',
+  minute: '2-digit',
+  timeZone: APP_TIME_ZONE,
+})
+
+/** Instante ISO → "hoy, 3:42 p.m." o "23 oct 2026, 3:42 p.m." (hora de la CDMX) */
+export function formatTimestamp(timestamp: string, today: IsoDate): string {
+  const instant = new Date(timestamp)
+  const date = todayInMexico(instant)
+  // Intl separa "p. m." con espacios especiales; se normalizan a espacios comunes.
+  const time = timeFormatter.format(instant).replace(/\s/g, ' ')
+  return `${date === today ? 'hoy' : formatDateWithYear(date)}, ${time}`
 }

@@ -6,6 +6,7 @@ import {
   formatMonthYear,
   formatRelativeDays,
   formatShortDate,
+  formatTimestamp,
 } from './format'
 
 describe('formatos de fecha', () => {
@@ -29,5 +30,31 @@ describe('formatRelativeDays', () => {
     [-3, 'hace 3 días'],
   ])('%i → %s', (days, expected) => {
     expect(formatRelativeDays(days)).toBe(expected)
+  })
+})
+
+describe('formatTimestamp', () => {
+  it.each([
+    [
+      'hoy por la tarde',
+      '2026-10-24T21:42:00.000Z',
+      '2026-10-24',
+      'hoy, 3:42 p.m.',
+    ],
+    [
+      'otro día',
+      '2026-10-23T15:05:00.000Z',
+      '2026-10-24',
+      '23 oct 2026, 9:05 a.m.',
+    ],
+    // 2:30 UTC del 25 = 20:30 del 24 en la CDMX: sigue siendo "hoy".
+    [
+      'de noche en UTC pero hoy en CDMX',
+      '2026-10-25T02:30:00.000Z',
+      '2026-10-24',
+      'hoy, 8:30 p.m.',
+    ],
+  ])('%s', (_case, timestamp, today, expected) => {
+    expect(formatTimestamp(timestamp, today)).toBe(expected)
   })
 })

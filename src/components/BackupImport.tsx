@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router'
 import { useGastosContext } from '../state/gastosContext'
+import { useSync } from '../state/syncContext'
 import { ui } from './styles'
 
 interface Props {
@@ -18,6 +19,7 @@ export function BackupImport({
   goHomeAfterImport = false,
 }: Props) {
   const { mutate } = useGastosContext()
+  const { requestFullSync } = useSync()
   const navigate = useNavigate()
   const [pendingJson, setPendingJson] = useState<string | null>(null)
   const [message, setMessage] = useState<Message | null>(null)
@@ -25,6 +27,8 @@ export function BackupImport({
   async function importJson(json: string) {
     setPendingJson(null)
     const result = await mutate((repo) => repo.importBackup(json))
+    // Con sesión, lo importado se combina con la cuenta (gana lo más reciente).
+    if (result.ok) requestFullSync()
     if (result.ok && goHomeAfterImport) {
       void navigate('/', { replace: true })
       return

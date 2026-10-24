@@ -10,6 +10,11 @@ import { emptyAppData, OTHER_CATEGORY_ID } from './defaults'
 import { migrateToCurrent } from './migrations'
 import { NotFoundError, type GastosRepository } from './repository'
 import {
+  mergeRemoteChanges,
+  resetUntouchedDefaultCategories,
+  type SyncChanges,
+} from './sync'
+import {
   AppDataSchema,
   CardInputSchema,
   CategoryInputSchema,
@@ -255,6 +260,16 @@ export class LocalStorageRepository implements GastosRepository {
 
   async clearAll(): Promise<void> {
     this.deps.storage.removeItem(STORAGE_KEY)
+  }
+
+  // ---------- sincronización ----------
+
+  async applyRemoteChanges(remote: SyncChanges): Promise<void> {
+    this.write(mergeRemoteChanges(this.read(), remote))
+  }
+
+  async resetUntouchedDefaultCategories(): Promise<void> {
+    this.write(resetUntouchedDefaultCategories(this.read()))
   }
 }
 

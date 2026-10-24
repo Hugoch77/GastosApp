@@ -1,5 +1,6 @@
 import { BackupImport } from '../components/BackupImport'
 import { ui } from '../components/styles'
+import { SyncSettings } from '../components/SyncSettings'
 import { CardForm } from './CardFormPage'
 
 /** Se muestra mientras no hay ninguna tarjeta registrada. */
@@ -18,6 +19,11 @@ export function OnboardingPage() {
       </header>
 
       <CardForm onboarding />
+
+      <section className="space-y-3 px-4">
+        <h2 className={ui.sectionTitle}>¿Ya la usas en otro dispositivo?</h2>
+        <SyncSettings />
+      </section>
 
       <section className="space-y-3 px-4 pb-10">
         <h2 className={ui.sectionTitle}>¿Ya tienes un respaldo?</h2>

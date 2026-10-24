@@ -5,10 +5,12 @@ import { ui } from '../components/styles'
 import { STORAGE_KEY } from '../data/localStorageRepository'
 import { downloadTextFile } from '../lib/download'
 import { useGastosContext } from '../state/gastosContext'
+import { useSync } from '../state/syncContext'
 
 /** Se muestra si los datos guardados no se pueden leer. Nunca los borra sin permiso. */
 export function StorageErrorPage({ message }: { message: string }) {
   const { mutate } = useGastosContext()
+  const { session, requestFullSync } = useSync()
 
   function downloadDamagedData() {
     const raw = window.localStorage.getItem(STORAGE_KEY) ?? ''
@@ -45,8 +47,16 @@ export function StorageErrorPage({ message }: { message: string }) {
         <ConfirmButton
           label="Borrar datos y empezar de cero"
           confirmLabel="Sí, borrar todo"
-          warning="Se perderán los datos guardados en este dispositivo. Descarga primero una copia si crees que podrías recuperarlos."
-          onConfirm={() => mutate((repo) => repo.clearAll())}
+          warning={
+            session
+              ? 'Se borrarán los datos de este dispositivo y se volverán a bajar los de tu cuenta.'
+              : 'Se perderán los datos guardados en este dispositivo. Descarga primero una copia si crees que podrías recuperarlos.'
+          }
+          onConfirm={async () => {
+            await mutate((repo) => repo.clearAll())
+            // Con sesión iniciada, los datos se recuperan de la nube.
+            requestFullSync()
+          }}
           testId="clear-all"
         />
       </section>

@@ -44,6 +44,9 @@ Tus datos se guardan solo en tu dispositivo.
 - **Compartir a la app**: con la app instalada, _GastosApp_ aparece en el menú _Compartir_ de Android;
   al compartirle un texto (p. ej. un SMS o una notificación del banco) abre el formulario ya prellenado
   con las mismas reglas de la captura por voz.
+- **Sincronización entre dispositivos** (opcional): inicias sesión una vez en cada dispositivo (celular y
+  computadora) y los cambios se suben y bajan solos en segundo plano. Sin sesión, todo sigue funcionando
+  solo en el dispositivo. Si dos dispositivos cambian lo mismo, gana el cambio más reciente.
 - **PWA**: instalable, funciona sin conexión, tiene modo oscuro y avisa cuando hay una versión nueva.
   Al mantener presionado el ícono aparecen los accesos directos _Gasto por voz_ y _Nuevo movimiento_.
 
@@ -71,7 +74,7 @@ horaria de la Ciudad de México.
 - [Vitest](https://vitest.dev/) + [fast-check](https://fast-check.dev/) para pruebas unitarias y de propiedades
 - [pytest](https://pytest.org/) + [Playwright](https://playwright.dev/python/) para pruebas E2E con Page Objects
 - [oxlint](https://oxc.rs/) + [Prettier](https://prettier.io/) para lint y formato
-- API de sincronización (en desarrollo): [FastAPI](https://fastapi.tiangolo.com/) +
+- API de sincronización: [FastAPI](https://fastapi.tiangolo.com/) +
   [SQLAlchemy](https://www.sqlalchemy.org/) + [Alembic](https://alembic.sqlalchemy.org/) sobre Postgres
 - GitHub Actions para integración continua y publicación en GitHub Pages
 
@@ -139,7 +142,7 @@ El Excel necesita una hoja `Datos compra` con las columnas `MONTO TOTAL`, `# DE 
 `DETALLE` (con la fecha al final, p. ej. `Tacos 8/10/26`). El JSON se guarda junto al Excel y se importa en
 **Ajustes → Importar respaldo**. Usa `--help` para ver todas las opciones.
 
-### API de sincronización (en desarrollo)
+### API de sincronización
 
 Permite usar los mismos datos en varios dispositivos. Necesita un Postgres (p. ej. [Neon](https://neon.com),
 plan gratuito); copia `api/.env.example` como `api/.env` y pon las cadenas de conexión.
@@ -185,7 +188,11 @@ Cada push ejecuta el workflow [`ci.yml`](.github/workflows/ci.yml):
 
 ## Datos y privacidad
 
-La información se guarda en el `localStorage` del navegador y no se envía a ningún servidor. Para cambiar de
-dispositivo o tener un respaldo, usa **Ajustes → Descargar respaldo** y luego importa el archivo JSON.
-Borrar los datos del sitio en el navegador borra también los movimientos, así que conviene exportar un respaldo
-de vez en cuando.
+La información se guarda en el `localStorage` del navegador. Sin iniciar sesión no se envía a ningún servidor:
+para cambiar de dispositivo o tener un respaldo, usa **Ajustes → Descargar respaldo** y luego importa el
+archivo JSON. Borrar los datos del sitio en el navegador borra también los movimientos, así que conviene
+exportar un respaldo de vez en cuando.
+
+Con **Ajustes → Cuenta y sincronización** los datos también se guardan en la API propia (`api/`, Postgres) y se
+comparten entre tus dispositivos. La app sigue funcionando sin conexión y sincroniza cuando vuelve la red.
+Para probar la app contra la API local, crea `.env.local` con `VITE_API_URL=http://localhost:8000`.

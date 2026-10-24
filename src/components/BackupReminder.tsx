@@ -1,6 +1,7 @@
 import { daysBetween } from '../domain/dates'
 import { useBackupStatus, useExportBackup } from '../hooks/useBackup'
 import { useToday } from '../hooks/useToday'
+import { useSync } from '../state/syncContext'
 import { AlertIcon } from './Icons'
 
 /** Aviso en el panel cuando hay cambios sin respaldar desde hace tiempo. */
@@ -8,8 +9,10 @@ export function BackupReminder() {
   const today = useToday()
   const { lastBackupDate, shouldRemind } = useBackupStatus()
   const exportBackup = useExportBackup()
+  const { session } = useSync()
 
-  if (!shouldRemind) return null
+  // Con sesión iniciada los datos ya tienen copia en la nube.
+  if (!shouldRemind || session) return null
 
   const message =
     lastBackupDate === null

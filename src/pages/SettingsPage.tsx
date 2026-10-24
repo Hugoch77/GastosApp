@@ -2,18 +2,24 @@ import { useState } from 'react'
 import { Link } from 'react-router'
 import { BackupImport } from '../components/BackupImport'
 import { PageHeader } from '../components/PageHeader'
+import { SyncSettings } from '../components/SyncSettings'
 import { ui } from '../components/styles'
 import { activeCards, activeCategories } from '../data/selectors'
 import { isValidIsoDate } from '../domain/dates'
 import { useBackupStatus, useExportBackup } from '../hooks/useBackup'
 import { formatDateWithYear } from '../lib/format'
 import { useGastos } from '../state/gastosContext'
+import { useSync } from '../state/syncContext'
 
 export function SettingsPage() {
   return (
     <>
       <PageHeader title="Ajustes" />
       <main className="space-y-8 px-4">
+        <section className="space-y-3">
+          <h2 className={ui.sectionTitle}>Cuenta y sincronización</h2>
+          <SyncSettings />
+        </section>
         <CardsSection />
         <CategoriesSection />
         <BackupSection />
@@ -96,13 +102,15 @@ function CategoriesSection() {
 function BackupSection() {
   const exportBackup = useExportBackup()
   const { lastBackupDate } = useBackupStatus()
+  const { session } = useSync()
 
   return (
     <section className="space-y-3">
       <h2 className={ui.sectionTitle}>Respaldo</h2>
       <p className={ui.muted}>
-        Tus datos solo se guardan en este dispositivo. Descarga un respaldo de
-        vez en cuando o úsalo para pasar tus datos a otro dispositivo.
+        {session
+          ? 'Tus datos se sincronizan con tu cuenta. Un respaldo sigue siendo útil como copia propia.'
+          : 'Tus datos solo se guardan en este dispositivo. Descarga un respaldo de vez en cuando o úsalo para pasar tus datos a otro dispositivo.'}
       </p>
       <p className={ui.muted} data-testid="last-backup">
         {lastBackupDate
