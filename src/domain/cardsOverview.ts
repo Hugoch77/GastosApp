@@ -69,3 +69,34 @@ export function getCardsOverview(
     pendingInstallmentsCents: sumOf(rows, (s) => s.pendingInstallmentsCents),
   }
 }
+
+export interface PendingPayment {
+  cardId: string
+  name: string
+  amountCents: number
+}
+
+/** Lo que falta pagar de cada tarjeta (en el orden del resumen); omite las al corriente. */
+export function pendingPayments(overview: CardsOverview): PendingPayment[] {
+  return overview.rows
+    .filter((row) => row.summary.noInterestPaymentCents > 0)
+    .map((row) => ({
+      cardId: row.id,
+      name: row.name,
+      amountCents: row.summary.noInterestPaymentCents,
+    }))
+}
+
+/**
+ * Primera fecha en la que un pago cuenta para TODAS las tarjetas pendientes: el inicio
+ * de Periodo Actual más reciente entre ellas. `null` si no hay nada pendiente.
+ */
+export function earliestPaymentDateForAll(
+  overview: CardsOverview,
+): IsoDate | null {
+  const starts = overview.rows
+    .filter((row) => row.summary.noInterestPaymentCents > 0)
+    .map((row) => row.summary.cycle.current.period.start)
+  if (starts.length === 0) return null
+  return starts.reduce((latest, start) => (start > latest ? start : latest))
+}

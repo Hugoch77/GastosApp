@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router'
+import { MarkAsPaid } from '../components/MarkAsPaid'
 import { Money } from '../components/Money'
 import { PageHeader } from '../components/PageHeader'
 import { PaymentStatusBadge } from '../components/PaymentStatusBadge'
@@ -8,7 +9,12 @@ import {
   billingConfigFor,
   transactionsForCard,
 } from '../data/selectors'
-import { getCardsOverview, type CardOverviewRow } from '../domain/cardsOverview'
+import {
+  earliestPaymentDateForAll,
+  getCardsOverview,
+  pendingPayments,
+  type CardOverviewRow,
+} from '../domain/cardsOverview'
 import { useToday } from '../hooks/useToday'
 import { formatRelativeDays, formatShortDate } from '../lib/format'
 import { useGastos } from '../state/gastosContext'
@@ -27,6 +33,9 @@ export function CardsOverviewPage() {
       transactions: transactionsForCard(data, card.id),
     })),
   )
+
+  const pending = pendingPayments(overview)
+  const minPaymentDate = earliestPaymentDateForAll(overview)
 
   /** Al tocar una tarjeta se selecciona y se abre su panel. */
   async function openCard(cardId: string) {
@@ -57,6 +66,14 @@ export function CardsOverviewPage() {
               testId="cards-total-pending-installments"
             />
           </p>
+          {minPaymentDate && pending.length > 1 && (
+            <MarkAsPaid
+              payments={pending}
+              minDate={minPaymentDate}
+              label="Ya pagué todas"
+              testId="mark-all-paid"
+            />
+          )}
         </section>
 
         <ul className={ui.list}>

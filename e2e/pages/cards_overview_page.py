@@ -11,6 +11,10 @@ class CardsOverviewPage:
         self.total_pending_installments = page.get_by_test_id("cards-total-pending-installments")
         self.rows = page.get_by_test_id("card-overview-row")
         self.names = page.get_by_test_id("card-overview-name")
+        self.mark_all_paid_button = page.get_by_test_id("mark-all-paid")
+        self.mark_all_paid_list = page.get_by_test_id("mark-all-paid-list")
+        self.mark_all_paid_date = page.locator("#mark-all-paid-date")
+        self.mark_all_paid_confirm = page.get_by_test_id("mark-all-paid-confirm")
 
     def row(self, name: str) -> Locator:
         return self.rows.filter(has=self.page.get_by_test_id("card-overview-name").get_by_text(name, exact=True))

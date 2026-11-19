@@ -18,6 +18,12 @@ class DashboardPage:
         self.add_transaction_button = page.get_by_test_id("add-transaction")
         self.backup_reminder = page.get_by_test_id("backup-reminder")
         self.backup_reminder_download = page.get_by_test_id("backup-reminder-download")
+        self.paid_since_cut = page.get_by_test_id("paid-since-cut")
+        self.mark_paid_button = page.get_by_test_id("mark-paid")
+        self.mark_paid_amount = page.locator("#mark-paid-amount")
+        self.mark_paid_date = page.locator("#mark-paid-date")
+        self.mark_paid_confirm = page.get_by_test_id("mark-paid-confirm")
+        self.mark_paid_date_error = page.get_by_test_id("mark-paid-date-error")
 
     def open(self) -> None:
         self.page.goto("/")
@@ -25,3 +31,12 @@ class DashboardPage:
     def status(self) -> str | None:
         """Estado del semáforo: on-track, due-soon, past-suggested, overdue o paid."""
         return self.payment_status.get_attribute("data-status")
+
+    def mark_as_paid(self, amount: str | None = None, date: str | None = None) -> None:
+        """Atajo "Ya pagué"; sin argumentos registra lo pendiente con fecha de hoy."""
+        self.mark_paid_button.click()
+        if amount is not None:
+            self.mark_paid_amount.fill(amount)
+        if date is not None:
+            self.mark_paid_date.fill(date)
+        self.mark_paid_confirm.click()

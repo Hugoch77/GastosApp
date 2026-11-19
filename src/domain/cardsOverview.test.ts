@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import type { BillingConfig } from './billing'
-import { getCardsOverview, type CardOverviewInput } from './cardsOverview'
+import {
+  earliestPaymentDateForAll,
+  getCardsOverview,
+  pendingPayments,
+  type CardOverviewInput,
+} from './cardsOverview'
 import type { Transaction, TransactionType } from './types'
 
 // Martes 20 de octubre de 2026.
@@ -110,5 +115,30 @@ describe('getCardsOverview', () => {
       totalBalanceCents: 0,
       pendingInstallmentsCents: 0,
     })
+  })
+})
+
+describe('pendingPayments y earliestPaymentDateForAll', () => {
+  it('solo las tarjetas con algo por pagar, en el orden del resumen', () => {
+    const overview = getCardsOverview(TODAY, [
+      card('Azul', CUT_15, [tx('charge', '2026-10-01', 50000)]),
+      card('Oro', CUT_5, [
+        tx('charge', '2026-09-20', 30000),
+        tx('payment', '2026-10-10', 10000), // pago parcial
+      ]),
+      card('Plata', CUT_15, []), // al corriente
+    ])
+    expect(pendingPayments(overview)).toEqual([
+      { cardId: 'Oro', name: 'Oro', amountCents: 20000 },
+      { cardId: 'Azul', name: 'Azul', amountCents: 50000 },
+    ])
+    // Oro: periodo actual desde el 5 oct; Azul: desde el 16 oct → gana el más reciente.
+    expect(earliestPaymentDateForAll(overview)).toBe('2026-10-16')
+  })
+
+  it('sin pendientes', () => {
+    const overview = getCardsOverview(TODAY, [card('Plata', CUT_15, [])])
+    expect(pendingPayments(overview)).toEqual([])
+    expect(earliestPaymentDateForAll(overview)).toBeNull()
   })
 })

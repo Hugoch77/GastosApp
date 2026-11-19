@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { BackupReminder } from '../components/BackupReminder'
 import { CardSwitcher } from '../components/CardSwitcher'
 import { AlertIcon, CheckIcon } from '../components/Icons'
+import { MarkAsPaid } from '../components/MarkAsPaid'
 import { Money } from '../components/Money'
 import { PageHeader } from '../components/PageHeader'
 import { PaymentStatusBadge } from '../components/PaymentStatusBadge'
@@ -37,7 +38,7 @@ export function DashboardPage() {
         {summary.paymentStatus === 'paid' ? (
           <UpToDateHero summary={summary} />
         ) : (
-          <PaymentDueHero summary={summary} />
+          <PaymentDueHero summary={summary} cardId={card.id} />
         )}
 
         <div className="grid grid-cols-2 gap-3">
@@ -87,8 +88,14 @@ export function DashboardPage() {
   )
 }
 
-function PaymentDueHero({ summary }: { summary: DashboardSummary }) {
-  const { billed } = summary.cycle
+function PaymentDueHero({
+  summary,
+  cardId,
+}: {
+  summary: DashboardSummary
+  cardId: string
+}) {
+  const { billed, current } = summary.cycle
   const status = summary.paymentStatus
 
   return (
@@ -141,6 +148,19 @@ function PaymentDueHero({ summary }: { summary: DashboardSummary }) {
           )}
         </div>
       )}
+
+      <MarkAsPaid
+        payments={[
+          {
+            cardId,
+            name: '',
+            amountCents: summary.noInterestPaymentCents,
+          },
+        ]}
+        minDate={current.period.start}
+        label="Ya pagué"
+        testId="mark-paid"
+      />
     </section>
   )
 }
@@ -159,6 +179,12 @@ function UpToDateHero({ summary }: { summary: DashboardSummary }) {
       <p className={ui.muted}>
         No tienes pagos pendientes del último estado de cuenta.
       </p>
+      {summary.billedStatementCents > 0 && summary.paidSinceCutCents > 0 && (
+        <p className={ui.muted} data-testid="paid-since-cut">
+          Pagaste <Money cents={summary.paidSinceCutCents} /> del estado de
+          cuenta de <Money cents={summary.billedStatementCents} />.
+        </p>
+      )}
       {summary.creditBalanceCents > 0 && (
         <p>
           Saldo a favor:{' '}
